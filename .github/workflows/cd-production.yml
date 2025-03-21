@@ -1,4 +1,4 @@
-name: Deploy AI Platform to ECS
+name: Deploy AI Platform to ECS Production
 
 on:
   push:
