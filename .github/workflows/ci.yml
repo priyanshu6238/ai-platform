@@ -41,4 +41,4 @@ jobs:
 
       - name: Deploy to ECS
         run: |
-          aws ecs update-service --cluster ${{ github.event.repository.name }}-staging-cluster --service ${{ github.event.repository.name }}-service --force-new-deployment
+          aws ecs update-service --cluster ${{ github.event.repository.name }}-staging-cluster --service ${{ github.event.repository.name }}-staging-service --force-new-deployment
