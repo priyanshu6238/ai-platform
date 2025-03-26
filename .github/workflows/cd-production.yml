@@ -22,11 +22,33 @@ jobs:
       - name: Check if tag is from main branch
         id: check-branch
         run: |
-          if [ "$(git branch -r --contains ${{ github.ref }})" == "origin/main" ]; then
-            echo "IS_MAIN=true" >> $GITHUB_ENV
-          else
-            echo "IS_MAIN=false" >> $GITHUB_ENV
-          fi
+        # Get the commit that the tag points to
+        TAG_COMMIT=$(git rev-parse ${{ github.ref }})
+        # Get the latest commit from main branch
+        MAIN_COMMIT=$(git rev-parse origin/main)
+        
+        echo "Debug Information:"
+        echo "Current tag ref: ${{ github.ref }}"
+        echo "Tag commit hash: $TAG_COMMIT"
+        echo "Main branch commit hash: $MAIN_COMMIT"
+        echo "All branches containing this tag:"
+        git branch -r --contains ${{ github.ref }}
+        
+        # Check if the tag commit is reachable from main branch
+        if git merge-base --is-ancestor $TAG_COMMIT $MAIN_COMMIT; then
+          echo "✅ Tag is from main branch"
+          echo "IS_MAIN=true" >> $GITHUB_ENV
+        else
+          echo "❌ Tag is not from main branch"
+          echo "IS_MAIN=false" >> $GITHUB_ENV
+        fi
+        
+        # Print the final decision
+        echo "Final IS_MAIN value: ${{ env.IS_MAIN }}"
+        
+        # Print git history for debugging
+        echo "Recent git history:"
+        git log --oneline -n 5
 
       - name: Configure AWS credentials
         if: env.IS_MAIN == 'true'
