@@ -35,8 +35,8 @@ jobs:
           REPOSITORY: ${{ github.event.repository.name }}-repo
           TAG: ${{ github.ref_name }}
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$TAG ./backend
-          docker push $REGISTRY/$REPOSITORY:$TAG
+          docker build -t $REGISTRY/$REPOSITORY:latest ./backend
+          docker push $REGISTRY/$REPOSITORY:latest
 
       - name: Deploy to ECS
         run: |
