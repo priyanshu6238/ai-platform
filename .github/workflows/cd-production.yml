@@ -19,51 +19,17 @@ jobs:
       - name: Checkout the repo
         uses: actions/checkout@v4
 
-      - name: Check if tag is from main branch
-        id: check-branch
-        run: |
-        # Get the commit that the tag points to
-        TAG_COMMIT=$(git rev-parse ${{ github.ref }})
-        # Get the latest commit from main branch
-        MAIN_COMMIT=$(git rev-parse origin/main)
-        
-        echo "Debug Information:"
-        echo "Current tag ref: ${{ github.ref }}"
-        echo "Tag commit hash: $TAG_COMMIT"
-        echo "Main branch commit hash: $MAIN_COMMIT"
-        echo "All branches containing this tag:"
-        git branch -r --contains ${{ github.ref }}
-        
-        # Check if the tag commit is reachable from main branch
-        if git merge-base --is-ancestor $TAG_COMMIT $MAIN_COMMIT; then
-          echo "✅ Tag is from main branch"
-          echo "IS_MAIN=true" >> $GITHUB_ENV
-        else
-          echo "❌ Tag is not from main branch"
-          echo "IS_MAIN=false" >> $GITHUB_ENV
-        fi
-        
-        # Print the final decision
-        echo "Final IS_MAIN value: ${{ env.IS_MAIN }}"
-        
-        # Print git history for debugging
-        echo "Recent git history:"
-        git log --oneline -n 5
-
       - name: Configure AWS credentials
-        if: env.IS_MAIN == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v4 # More information on this action can be found below in the 'AWS Credentials' section
         with:
           role-to-assume: arn:aws:iam::024209611402:role/github-action-role
           aws-region: ap-south-1
 
       - name: Login to Amazon ECR
-        if: env.IS_MAIN == 'true'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and Push Docker Image
-        if: env.IS_MAIN == 'true'
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: ${{ github.event.repository.name }}-repo
@@ -73,7 +39,6 @@ jobs:
           docker push $REGISTRY/$REPOSITORY:$TAG
 
       - name: Deploy to ECS
-        if: env.IS_MAIN == 'true'
         run: |
           aws ecs update-service \
             --cluster ${{ github.event.repository.name }}-cluster \
