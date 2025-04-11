@@ -9,7 +9,7 @@ class ProjectUserBase(SQLModel):
     project_id: int = Field(
         foreign_key="project.id", nullable=False, ondelete="CASCADE"
     )
-    user_id: uuid.UUID = Field(
+    user_id: int = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
     is_admin: bool = Field(

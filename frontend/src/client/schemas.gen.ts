@@ -322,8 +322,7 @@ export const UserPublicSchema = {
       title: "Full Name",
     },
     id: {
-      type: "string",
-      format: "uuid",
+      type: "number",
       title: "Id",
     },
   },

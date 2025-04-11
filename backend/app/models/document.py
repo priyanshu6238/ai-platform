@@ -1,4 +1,3 @@
-from uuid import UUID, uuid4
 from datetime import datetime
 
 from sqlmodel import Field, Relationship, SQLModel
@@ -8,11 +7,11 @@ from .user import User
 
 
 class Document(SQLModel, table=True):
-    id: UUID = Field(
-        default_factory=uuid4,
+    id: int = Field(
+        default=None,
         primary_key=True,
     )
-    owner_id: UUID = Field(
+    owner_id: int = Field(
         foreign_key="user.id",
         nullable=False,
         ondelete="CASCADE",
