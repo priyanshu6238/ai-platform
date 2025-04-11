@@ -26,16 +26,20 @@ class APIResponse(BaseModel, Generic[T]):
     data: Optional[T] = None
     error: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
+    status_code: int = 200  # Default status code for success responses
 
     @classmethod
     def success_response(
-        cls, data: T, metadata: Optional[Dict[str, Any]] = None
+        cls, 
+        data: T, 
+        metadata: Optional[Dict[str, Any]] = None,
+        status_code: int = 200
     ) -> "APIResponse[T]":
-        return cls(success=True, data=data, error=None, metadata=metadata)
+        return cls(success=True, data=data, error=None, metadata=metadata, status_code=status_code)
 
     @classmethod
-    def failure_response(cls, error: str) -> "APIResponse[None]":
-        return cls(success=False, data=None, error=error)
+    def failure_response(cls, error: str, status_code: int = 400) -> "APIResponse[None]":
+        return cls(success=False, data=None, error=error, status_code=status_code)
 
 
 @dataclass

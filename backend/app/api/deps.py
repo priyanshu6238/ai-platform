@@ -127,9 +127,9 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     """
     Global handler for HTTPException to return standardized response format.
     """
-    return JSONResponse(
+    return APIResponseJSONResponse(
         status_code=exc.status_code,
-        content=APIResponse.failure_response(exc.detail).model_dump()
+        content=APIResponse.failure_response(exc.detail, status_code=exc.status_code).model_dump()
         | {"detail": exc.detail},  # TEMPORARY: Keep "detail" for backward compatibility
     )
 
@@ -203,3 +203,10 @@ def verify_user_project_organization(
 
     current_user.organization_id = organization_id
     return UserProjectOrg(**current_user.model_dump(), project_id=project_id)
+
+
+class APIResponseJSONResponse(JSONResponse):
+    def render(self, content: any) -> bytes:
+        if isinstance(content, APIResponse):
+            self.status_code = content.status_code
+        return super().render(content)
