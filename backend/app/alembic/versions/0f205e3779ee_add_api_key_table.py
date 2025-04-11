@@ -2,12 +2,11 @@
 
 Revision ID: 0f205e3779ee
 Revises: 99f4fc325617
-Create Date: 2025-03-21 23:43:34.181704
+Create Date: 2025-03-21 20:51:00.759926
 
 """
 from alembic import op
 import sqlalchemy as sa
-import sqlmodel.sql.sqltypes
 
 
 # revision identifiers, used by Alembic.
@@ -22,8 +21,8 @@ def upgrade():
     op.create_table(
         "apikey",
         sa.Column("organization_id", sa.Integer(), nullable=False),
-        sa.Column("user_id", sa.Uuid(), nullable=False),
-        sa.Column("key", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("key", sa.String(), nullable=False),
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("is_deleted", sa.Boolean(), nullable=False),

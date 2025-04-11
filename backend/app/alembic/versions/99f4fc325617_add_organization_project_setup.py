@@ -49,7 +49,7 @@ def upgrade():
     op.create_table(
         "projectuser",
         sa.Column("project_id", sa.Integer(), nullable=False),
-        sa.Column("user_id", sa.Uuid(), nullable=False),
+        sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("is_admin", sa.Boolean(), nullable=False),
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
