@@ -3,6 +3,7 @@ import secrets
 from datetime import datetime
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship
+from app.core.security import get_password_hash
 
 
 class APIKeyBase(SQLModel):
@@ -13,7 +14,12 @@ class APIKeyBase(SQLModel):
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
     key: str = Field(
-        default_factory=lambda: secrets.token_urlsafe(32), unique=True, index=True
+        default_factory=lambda: "ApiKey " + secrets.token_urlsafe(32), unique=True
+    )
+    hashed_key: str = Field(
+        default_factory=lambda: get_password_hash("ApiKey " + secrets.token_urlsafe(32)),
+        unique=True,
+        index=True,
     )
 
 

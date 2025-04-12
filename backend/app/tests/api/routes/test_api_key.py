@@ -7,7 +7,7 @@ from app.models import APIKey, User, Organization
 from app.core.config import settings
 from app.crud import api_key as api_key_crud
 from app.tests.utils.utils import random_email
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, verify_password
 
 client = TestClient(app)
 
@@ -25,9 +25,7 @@ def create_test_user(db: Session) -> User:
 
 
 def create_test_organization(db: Session) -> Organization:
-    org = Organization(
-        name=f"Test Organization {uuid.uuid4()}", description="Test Organization"
-    )
+    org = Organization(name="Test Organization")
     db.add(org)
     db.commit()
     db.refresh(org)
@@ -48,8 +46,10 @@ def test_create_api_key(db: Session, superuser_token_headers: dict[str, str]):
     assert data["success"] is True
     assert "id" in data["data"]
     assert "key" in data["data"]
+    assert "hashed_key" in data["data"]
     assert data["data"]["organization_id"] == org.id
     assert data["data"]["user_id"] == str(user.id)
+    assert verify_password(data["data"]["key"], data["data"]["hashed_key"])
 
 
 def test_create_duplicate_api_key(db: Session, superuser_token_headers: dict[str, str]):
@@ -73,38 +73,38 @@ def test_create_duplicate_api_key(db: Session, superuser_token_headers: dict[str
 def test_list_api_keys(db: Session, superuser_token_headers: dict[str, str]):
     user = create_test_user(db)
     org = create_test_organization(db)
-    api_key = api_key_crud.create_api_key(db, organization_id=org.id, user_id=user.id)
+
+    # Create an API key first
+    api_key = api_key_crud.create_api_key(db, org.id, user.id)
 
     response = client.get(
         f"{settings.API_V1_STR}/apikeys",
-        params={"organization_id": org.id, "user_id": user.id},
+        params={"organization_id": org.id},
         headers=superuser_token_headers,
     )
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
-    assert isinstance(data["data"], list)
-    assert len(data["data"]) > 0
-    assert data["data"][0]["organization_id"] == org.id
-    assert data["data"][0]["user_id"] == str(user.id)
+    assert len(data["data"]) == 1
+    assert data["data"][0]["id"] == api_key.id
+    assert verify_password(data["data"][0]["key"], data["data"][0]["hashed_key"])
 
 
 def test_get_api_key(db: Session, superuser_token_headers: dict[str, str]):
     user = create_test_user(db)
     org = create_test_organization(db)
-    api_key = api_key_crud.create_api_key(db, organization_id=org.id, user_id=user.id)
+
+    api_key = api_key_crud.create_api_key(db, org.id, user.id)
 
     response = client.get(
         f"{settings.API_V1_STR}/apikeys/{api_key.id}",
-        params={"organization_id": api_key.organization_id, "user_id": user.id},
         headers=superuser_token_headers,
     )
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
     assert data["data"]["id"] == api_key.id
-    assert data["data"]["organization_id"] == api_key.organization_id
-    assert data["data"]["user_id"] == str(user.id)
+    assert verify_password(data["data"]["key"], data["data"]["hashed_key"])
 
 
 def test_get_nonexistent_api_key(db: Session, superuser_token_headers: dict[str, str]):
@@ -123,17 +123,17 @@ def test_get_nonexistent_api_key(db: Session, superuser_token_headers: dict[str,
 def test_revoke_api_key(db: Session, superuser_token_headers: dict[str, str]):
     user = create_test_user(db)
     org = create_test_organization(db)
-    api_key = api_key_crud.create_api_key(db, organization_id=org.id, user_id=user.id)
+
+    api_key = api_key_crud.create_api_key(db, org.id, user.id)
 
     response = client.delete(
         f"{settings.API_V1_STR}/apikeys/{api_key.id}",
-        params={"organization_id": api_key.organization_id, "user_id": user.id},
         headers=superuser_token_headers,
     )
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
-    assert "API key revoked successfully" in data["data"]["message"]
+    assert data["data"]["message"] == "API key revoked successfully"
 
 
 def test_revoke_nonexistent_api_key(

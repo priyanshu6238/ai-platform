@@ -2,6 +2,7 @@ import uuid
 import secrets
 from datetime import datetime
 from sqlmodel import Session, select
+from app.core.security import verify_password, get_password_hash
 
 from app.models import APIKey, APIKeyPublic
 
@@ -13,8 +14,10 @@ def create_api_key(
     """
     Generates a new API key for an organization and associates it with a user.
     """
+    raw_key = "ApiKey " + secrets.token_urlsafe(32)
     api_key = APIKey(
-        key="ApiKey " + secrets.token_urlsafe(32),
+        key=raw_key,
+        hashed_key=get_password_hash(raw_key),
         organization_id=organization_id,
         user_id=user_id,
     )
@@ -73,11 +76,16 @@ def delete_api_key(session: Session, api_key_id: int) -> None:
 
 def get_api_key_by_value(session: Session, api_key_value: str) -> APIKey | None:
     """
-    Retrieve an API Key record by its value.
+    Retrieve an API Key record by verifying the provided key against stored hashed keys.
     """
-    return session.exec(
-        select(APIKey).where(APIKey.key == api_key_value, APIKey.is_deleted == False)
-    ).first()
+    api_keys = session.exec(
+        select(APIKey).where(APIKey.is_deleted == False)
+    ).all()
+    
+    for api_key in api_keys:
+        if verify_password(api_key_value, api_key.hashed_key):
+            return api_key
+    return None
 
 
 def get_api_key_by_user_org(
