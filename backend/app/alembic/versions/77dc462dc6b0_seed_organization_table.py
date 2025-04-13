@@ -17,6 +17,7 @@ from sqlmodel import select
 from app.models import Organization, Project, User, APIKey
 from passlib.context import CryptContext  # To hash passwords securely
 from app.core.security import get_password_hash
+from app.crud.api_key import generate_api_key
 
 # revision identifiers, used by Alembic.
 revision = "77dc462dc6b0"
@@ -90,8 +91,7 @@ def create_user(session: Session, is_super: bool = True) -> User:
 
 def create_api_key(session: Session, user: User, organization: Organization) -> APIKey:
     """Create an API key with a hashed value."""
-    raw_key = "ApiKey " + secrets.token_urlsafe(32)
-    hashed_key = get_password_hash(raw_key)
+    raw_key, hashed_key = generate_api_key()
     
     api_key = APIKey(
         key=hashed_key,
