@@ -13,8 +13,19 @@ class APIKeyBase(SQLModel):
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
     key: str = Field(
-        default_factory=lambda: secrets.token_urlsafe(32), unique=True, index=True
+        default=None,  # Will be set by CRUD layer
+        unique=True,
+        index=True
     )
+
+
+class APIKeyCreate(SQLModel):
+    key: str  # The raw API key shown to user once
+    hashed_key: str
+    organization_id: int
+    user_id: uuid.UUID
+    id: int
+    created_at: datetime
 
 
 class APIKeyPublic(APIKeyBase):

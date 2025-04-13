@@ -2,19 +2,32 @@ import uuid
 import secrets
 from datetime import datetime
 from sqlmodel import Session, select
+from app.core.security import verify_password, get_password_hash
 
-from app.models import APIKey, APIKeyPublic
+from app.models.api_key import APIKey, APIKeyPublic, APIKeyCreate
+
+
+def generate_api_key() -> tuple[str, str]:
+    """Generate a new API key and its hash."""
+    raw_key = secrets.token_urlsafe(32)
+    hashed_key = get_password_hash(raw_key)
+    return raw_key, hashed_key
 
 
 # Create API Key
 def create_api_key(
     session: Session, organization_id: uuid.UUID, user_id: uuid.UUID
-) -> APIKeyPublic:
+) -> APIKeyCreate:
     """
     Generates a new API key for an organization and associates it with a user.
+    Returns both the raw key (shown only once) and the hashed key.
     """
+    # Generate raw key and its hash
+    raw_key, hashed_key = generate_api_key()
+    
+    # Create API key record with hashed key
     api_key = APIKey(
-        key="ApiKey " + secrets.token_urlsafe(32),
+        key=hashed_key,
         organization_id=organization_id,
         user_id=user_id,
     )
@@ -23,7 +36,15 @@ def create_api_key(
     session.commit()
     session.refresh(api_key)
 
-    return APIKeyPublic.model_validate(api_key)
+    # Return response with both raw and hashed keys
+    return APIKeyCreate(
+        key=raw_key,
+        hashed_key=hashed_key,
+        organization_id=api_key.organization_id,
+        user_id=api_key.user_id,
+        id=api_key.id,
+        created_at=api_key.created_at
+    )
 
 
 # Get API Key by ID
@@ -73,11 +94,19 @@ def delete_api_key(session: Session, api_key_id: int) -> None:
 
 def get_api_key_by_value(session: Session, api_key_value: str) -> APIKey | None:
     """
-    Retrieve an API Key record by its value.
+    Retrieve an API Key record by verifying the provided key against stored hashes.
     """
-    return session.exec(
-        select(APIKey).where(APIKey.key == api_key_value, APIKey.is_deleted == False)
-    ).first()
+    # Get all active API keys
+    api_keys = session.exec(
+        select(APIKey).where(APIKey.is_deleted == False)
+    ).all()
+    
+    # Check each key
+    for api_key in api_keys:
+        if verify_password(api_key_value, api_key.key):
+            return api_key
+    
+    return None
 
 
 def get_api_key_by_user_org(

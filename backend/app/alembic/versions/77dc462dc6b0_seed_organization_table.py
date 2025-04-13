@@ -9,10 +9,14 @@ from app.core.config import settings
 from alembic import op
 import secrets
 from sqlmodel import Session
+import uuid
+from datetime import datetime
+from sqlmodel import select
 
 # Adjust the import based on your actual structure
 from app.models import Organization, Project, User, APIKey
 from passlib.context import CryptContext  # To hash passwords securely
+from app.core.security import get_password_hash
 
 # revision identifiers, used by Alembic.
 revision = "77dc462dc6b0"
@@ -85,14 +89,18 @@ def create_user(session: Session, is_super: bool = True) -> User:
 
 
 def create_api_key(session: Session, user: User, organization: Organization) -> APIKey:
-    """Create and return an API key for the user and organization."""
+    """Create an API key with a hashed value."""
+    raw_key = "ApiKey " + secrets.token_urlsafe(32)
+    hashed_key = get_password_hash(raw_key)
+    
     api_key = APIKey(
-        user_id=user.id,
+        key=hashed_key,
         organization_id=organization.id,
-        key="ApiKey " + secrets.token_urlsafe(32),
+        user_id=user.id,
     )
     session.add(api_key)
     session.commit()
+    session.refresh(api_key)
     return api_key
 
 
