@@ -48,7 +48,7 @@ def test_get_api_key(db: Session) -> None:
 
     assert retrieved_key is not None
     assert retrieved_key.id == created_key.id
-    assert retrieved_key.key == created_key.key
+    assert retrieved_key.key == created_key.hashed_key
 
 
 def test_get_api_key_not_found(db: Session) -> None:
@@ -105,7 +105,7 @@ def test_get_api_key_by_value(db: Session) -> None:
 
     assert retrieved_key is not None
     assert retrieved_key.id == api_key.id
-    assert retrieved_key.key == api_key.key
+    assert retrieved_key.key == api_key.hashed_key
 
 
 def test_get_api_key_by_user_org(db: Session) -> None:

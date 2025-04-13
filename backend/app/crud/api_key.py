@@ -9,7 +9,7 @@ from app.models.api_key import APIKey, APIKeyPublic, APIKeyCreate
 
 def generate_api_key() -> tuple[str, str]:
     """Generate a new API key and its hash."""
-    raw_key = secrets.token_urlsafe(32)
+    raw_key = "ApiKey " + secrets.token_urlsafe(32)
     hashed_key = get_password_hash(raw_key)
     return raw_key, hashed_key
 
