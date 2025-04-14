@@ -39,6 +39,7 @@ def create_api_key(
     # Return response with both raw and hashed keys
     return APIKeyCreate(
         key=raw_key,
+        hashed_key=hashed_key,
         organization_id=api_key.organization_id,
         user_id=api_key.user_id,
         id=api_key.id,
