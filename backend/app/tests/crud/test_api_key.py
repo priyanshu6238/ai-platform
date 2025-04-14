@@ -134,9 +134,9 @@ def test_get_api_key_by_value_invalid_key(db: Session) -> None:
 
     # Create a valid API key
     api_key = api_key_crud.create_api_key(db, org.id, user.id)
-    
+
     # Try to get API key with an invalid key
     invalid_key = "InvalidApiKey 123456"
     result = api_key_crud.get_api_key_by_value(db, invalid_key)
-    
+
     assert result is None
