@@ -126,3 +126,17 @@ def test_get_api_key_by_user_org_not_found(db: Session) -> None:
     user_id = uuid.uuid4()
     result = api_key_crud.get_api_key_by_user_org(db, org.id, user_id)
     assert result is None
+
+
+def test_get_api_key_by_value_invalid_key(db: Session) -> None:
+    user = create_test_user(db)
+    org = create_test_organization(db)
+
+    # Create a valid API key
+    api_key = api_key_crud.create_api_key(db, org.id, user.id)
+    
+    # Try to get API key with an invalid key
+    invalid_key = "InvalidApiKey 123456"
+    result = api_key_crud.get_api_key_by_value(db, invalid_key)
+    
+    assert result is None
