@@ -70,56 +70,6 @@ def test_create_duplicate_api_key(db: Session, superuser_token_headers: dict[str
     assert "API Key already exists" in response.json()["detail"]
 
 
-def test_list_api_keys(db: Session, superuser_token_headers: dict[str, str]):
-    user = create_test_user(db)
-    org = create_test_organization(db)
-    api_key = api_key_crud.create_api_key(db, organization_id=org.id, user_id=user.id)
-
-    response = client.get(
-        f"{settings.API_V1_STR}/apikeys",
-        params={"organization_id": org.id, "user_id": user.id},
-        headers=superuser_token_headers,
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
-    assert isinstance(data["data"], list)
-    assert len(data["data"]) > 0
-    assert data["data"][0]["organization_id"] == org.id
-    assert data["data"][0]["user_id"] == str(user.id)
-
-
-def test_get_api_key(db: Session, superuser_token_headers: dict[str, str]):
-    user = create_test_user(db)
-    org = create_test_organization(db)
-    api_key = api_key_crud.create_api_key(db, organization_id=org.id, user_id=user.id)
-
-    response = client.get(
-        f"{settings.API_V1_STR}/apikeys/{api_key.id}",
-        params={"organization_id": api_key.organization_id, "user_id": user.id},
-        headers=superuser_token_headers,
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
-    assert data["data"]["id"] == api_key.id
-    assert data["data"]["organization_id"] == api_key.organization_id
-    assert data["data"]["user_id"] == str(user.id)
-
-
-def test_get_nonexistent_api_key(db: Session, superuser_token_headers: dict[str, str]):
-    user = create_test_user(db)
-    org = create_test_organization(db)
-
-    response = client.get(
-        f"{settings.API_V1_STR}/apikeys/999999",
-        params={"organization_id": org.id, "user_id": user.id},
-        headers=superuser_token_headers,
-    )
-    assert response.status_code == 404
-    assert "API Key does not exist" in response.json()["detail"]
-
-
 def test_revoke_api_key(db: Session, superuser_token_headers: dict[str, str]):
     user = create_test_user(db)
     org = create_test_organization(db)

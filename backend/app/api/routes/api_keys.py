@@ -4,8 +4,6 @@ from sqlmodel import Session
 from app.api.deps import get_db, get_current_active_superuser
 from app.crud.api_key import (
     create_api_key,
-    get_api_key,
-    get_api_keys_by_organization,
     delete_api_key,
     get_api_key_by_user_org,
 )
@@ -46,45 +44,6 @@ def create_key(
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-# List API Keys
-@router.get("/", response_model=APIResponse[list[APIKeyPublic]])
-def list_keys(
-    organization_id: int,
-    session: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser),
-):
-    """
-    Retrieve all API keys for the user's organization.
-    """
-    try:
-        # Validate organization
-        validate_organization(session, organization_id)
-
-        # Retrieve API keys
-        api_keys = get_api_keys_by_organization(session, organization_id)
-        return APIResponse.success_response(api_keys)
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-# Get API Key by ID
-@router.get("/{api_key_id}", response_model=APIResponse[APIKeyPublic])
-def get_key(
-    api_key_id: int,
-    session: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser),
-):
-    """
-    Retrieve an API key by ID.
-    """
-    api_key = get_api_key(session, api_key_id)
-    if not api_key:
-        raise HTTPException(status_code=404, detail="API Key does not exist")
-
-    return APIResponse.success_response(api_key)
 
 
 # Revoke API Key (Soft Delete)
