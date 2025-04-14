@@ -92,7 +92,7 @@ def create_user(session: Session, is_super: bool = True) -> User:
 def create_api_key(session: Session, user: User, organization: Organization) -> APIKey:
     """Create an API key with a hashed value."""
     raw_key, hashed_key = generate_api_key()
-    
+
     api_key = APIKey(
         key=hashed_key,
         organization_id=organization.id,

@@ -12,11 +12,7 @@ class APIKeyBase(SQLModel):
     user_id: uuid.UUID = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
-    key: str = Field(
-        default=None,  # Will be set by CRUD layer
-        unique=True,
-        index=True
-    )
+    key: str = Field(default=None, unique=True, index=True)  # Will be set by CRUD layer
 
 
 class APIKeyCreate(SQLModel):

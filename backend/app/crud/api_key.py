@@ -24,7 +24,7 @@ def create_api_key(
     """
     # Generate raw key and its hash
     raw_key, hashed_key = generate_api_key()
-    
+
     # Create API key record with hashed key
     api_key = APIKey(
         key=hashed_key,
@@ -43,7 +43,7 @@ def create_api_key(
         organization_id=api_key.organization_id,
         user_id=api_key.user_id,
         id=api_key.id,
-        created_at=api_key.created_at
+        created_at=api_key.created_at,
     )
 
 
@@ -97,15 +97,13 @@ def get_api_key_by_value(session: Session, api_key_value: str) -> APIKey | None:
     Retrieve an API Key record by verifying the provided key against stored hashes.
     """
     # Get all active API keys
-    api_keys = session.exec(
-        select(APIKey).where(APIKey.is_deleted == False)
-    ).all()
-    
+    api_keys = session.exec(select(APIKey).where(APIKey.is_deleted == False)).all()
+
     # Check each key
     for api_key in api_keys:
         if verify_password(api_key_value, api_key.key):
             return api_key
-    
+
     return None
 
 
