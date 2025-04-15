@@ -15,7 +15,7 @@ class APIKeyBase(SQLModel):
     key: str = Field(default=None, unique=True, index=True)  # Will be set by CRUD layer
 
 
-class APIKeyCreate(SQLModel):
+class APIKeyCreateResponse(SQLModel):
     key: str  # The raw API key shown to user once
     organization_id: int
     user_id: uuid.UUID

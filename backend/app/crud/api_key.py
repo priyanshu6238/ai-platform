@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlmodel import Session, select
 from app.core.security import verify_password, get_password_hash
 
-from app.models.api_key import APIKey, APIKeyPublic, APIKeyCreate
+from app.models.api_key import APIKey, APIKeyPublic, APIKeyCreateResponse
 
 
 def generate_api_key() -> tuple[str, str]:
@@ -17,7 +17,7 @@ def generate_api_key() -> tuple[str, str]:
 # Create API Key
 def create_api_key(
     session: Session, organization_id: uuid.UUID, user_id: uuid.UUID
-) -> APIKeyCreate:
+) -> APIKeyCreateResponse:
     """
     Generates a new API key for an organization and associates it with a user.
     Returns the raw key (shown only once) and other key details.
@@ -37,7 +37,7 @@ def create_api_key(
     session.refresh(api_key)
 
     # Return response with raw key and other details
-    return APIKeyCreate(
+    return APIKeyCreateResponse(
         key=raw_key,
         organization_id=api_key.organization_id,
         user_id=api_key.user_id,
