@@ -17,7 +17,6 @@ class APIKeyBase(SQLModel):
 
 class APIKeyCreate(SQLModel):
     key: str  # The raw API key shown to user once
-    hashed_key: str
     organization_id: int
     user_id: uuid.UUID
     id: int

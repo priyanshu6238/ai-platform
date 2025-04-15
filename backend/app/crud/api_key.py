@@ -20,7 +20,7 @@ def create_api_key(
 ) -> APIKeyCreate:
     """
     Generates a new API key for an organization and associates it with a user.
-    Returns both the raw key (shown only once) and the hashed key.
+    Returns the raw key (shown only once) and other key details.
     """
     # Generate raw key and its hash
     raw_key, hashed_key = generate_api_key()
@@ -36,10 +36,9 @@ def create_api_key(
     session.commit()
     session.refresh(api_key)
 
-    # Return response with both raw and hashed keys
+    # Return response with raw key and other details
     return APIKeyCreate(
         key=raw_key,
-        hashed_key=hashed_key,
         organization_id=api_key.organization_id,
         user_id=api_key.user_id,
         id=api_key.id,
