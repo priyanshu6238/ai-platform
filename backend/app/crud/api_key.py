@@ -91,15 +91,33 @@ def delete_api_key(session: Session, api_key_id: int) -> None:
 def get_api_key_by_value(session: Session, api_key_value: str) -> APIKey | None:
     """
     Retrieve an API Key record by verifying the provided key against stored hashes.
+    Uses a direct database query with key identifier for better performance and security.
     """
-    # Get all active API keys
-    api_keys = session.exec(select(APIKey).where(APIKey.is_deleted == False)).all()
-
-    # Check each key
-    for api_key in api_keys:
-        if verify_password(api_key_value, api_key.key):
+    try:
+        # Extract key identifier (first part before the actual key)
+        key_parts = api_key_value.split(' ', 1)
+        if len(key_parts) != 2 or key_parts[0] != 'ApiKey':
+            return None
+        
+        # Extract the key identifier (first 8 characters of the random part)
+        key_identifier = key_parts[1][:8]
+        
+        # Get the API key using the identifier
+        api_key = session.exec(
+            select(APIKey)
+            .where(
+                APIKey.key.like(f"$2b${key_identifier}%"),  # Match bcrypt hash prefix
+                APIKey.is_deleted == False
+            )
+        ).first()
+        
+        # Verify the full key if found
+        if api_key and verify_password(api_key_value, api_key.key):
             return api_key
-
+            
+    except Exception as e:
+        print(f"Error in get_api_key_by_value: {str(e)}")
+        return None
     return None
 
 

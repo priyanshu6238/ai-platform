@@ -98,15 +98,25 @@ def test_delete_api_key_already_deleted(db: Session) -> None:
 
 
 def test_get_api_key_by_value(db: Session) -> None:
+    """Test retrieving an API key by its value."""
     user = create_test_user(db)
     org = create_test_organization(db)
 
-    api_key = api_key_crud.create_api_key(db, org.id, user.id)
-    retrieved_key = api_key_crud.get_api_key_by_value(db, api_key.key)
+    # Create API key and get the raw key from response
+    api_key_response = api_key_crud.create_api_key(db, org.id, user.id)
+    
+    # Get the actual API key record from DB
+    db_key = db.exec(
+        select(APIKey)
+        .where(APIKey.id == api_key_response.id)
+    ).first()
+    
+    # Verify using the raw key
+    retrieved_key = api_key_crud.get_api_key_by_value(db, api_key_response.key)
 
-    assert retrieved_key is not None
-    assert retrieved_key.id == api_key.id
-    assert retrieved_key.key.startswith("$2b$")
+    assert retrieved_key is not None, f"Failed to retrieve key with value: {api_key_response.key}"
+    assert retrieved_key.id == api_key_response.id
+    assert retrieved_key.key == db_key.key  # Should match the hashed key in DB
 
 
 def test_get_api_key_by_user_org(db: Session) -> None:
