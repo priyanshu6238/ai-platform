@@ -38,7 +38,7 @@ def create_api_key(
 
     # Set the raw key in the response (shown only once)
     api_key_dict = api_key.model_dump()
-    api_key_dict['key'] = raw_key
+    api_key_dict["key"] = raw_key
 
     return APIKeyPublic.model_validate(api_key_dict)
 
