@@ -129,7 +129,8 @@ def test_get_api_key_by_user_org_not_found(db: Session) -> None:
     assert result is None
 
 
-def test_get_api_key_by_value_invalid_key(db: Session) -> None:
+def test_verify_invalid_key(db: Session) -> None:
+    """Test that an invalid API key returns None."""
     user = create_test_user(db)
     org = create_test_organization(db)
 
