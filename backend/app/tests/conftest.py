@@ -22,14 +22,17 @@ from app.tests.utils.utils import get_superuser_token_headers
 def db() -> Generator[Session, None, None]:
     with Session(engine) as session:
         init_db(session)
-        yield session
-        # Delete data in reverse dependency order
-        session.execute(delete(ProjectUser))  # Many-to-many relationship
-        session.execute(delete(Project))
-        session.execute(delete(Organization))
-        session.execute(delete(APIKey))
-        session.execute(delete(User))
-        session.commit()
+        try:
+            yield session
+        finally:
+            # Delete data in reverse dependency order
+            session.execute(delete(ProjectUser))  # Many-to-many relationship
+            session.execute(delete(Project))
+            session.execute(delete(Organization))
+            session.execute(delete(APIKey))
+            session.execute(delete(User))
+            session.commit()
+            session.close()
 
 
 @pytest.fixture(scope="module")
