@@ -19,7 +19,7 @@ from .project import (
     ProjectUpdate,
 )
 
-from .api_key import APIKey, APIKeyBase, APIKeyPublic, APIKeyCreateResponse
+from .api_key import APIKey, APIKeyBase, APIKeyPublic
 
 from .organization import (
     Organization,

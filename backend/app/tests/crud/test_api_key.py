@@ -5,7 +5,7 @@ from app.crud import api_key as api_key_crud
 from app.models import APIKey, User, Organization
 from app.tests.utils.utils import random_email
 from app.core.security import get_password_hash
-from app.models.api_key import APIKeyCreateResponse
+from app.models.api_key import APIKey, APIKeyPublic
 
 
 # Helper function to create a user
