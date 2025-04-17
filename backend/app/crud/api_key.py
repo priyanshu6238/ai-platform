@@ -2,7 +2,12 @@ import uuid
 import secrets
 from datetime import datetime
 from sqlmodel import Session, select
-from app.core.security import verify_password, get_password_hash, encrypt_api_key, decrypt_api_key
+from app.core.security import (
+    verify_password,
+    get_password_hash,
+    encrypt_api_key,
+    decrypt_api_key,
+)
 import base64
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
