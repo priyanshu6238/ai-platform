@@ -98,7 +98,7 @@ def create_api_key(session: Session, user: User, organization: Organization) -> 
     raw_key = "ApiKey " + token
     # Encrypt the hashed token
     encrypted_key = encrypt_api_key(hashed_token)
-    
+
     api_key = APIKey(
         user_id=user.id,
         organization_id=organization.id,
