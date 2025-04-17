@@ -36,7 +36,7 @@ def test_api_key_format_validation():
     encrypted_valid = encrypt_api_key(valid_key)
     assert encrypted_valid is not None
     assert decrypt_api_key(encrypted_valid) == valid_key
-    
+
     # Test invalid API key format (missing prefix)
     invalid_key = "test123456789"
     encrypted_invalid = encrypt_api_key(invalid_key)
@@ -95,14 +95,14 @@ def test_decrypt_api_key_error_handling():
     # Test with invalid input
     with pytest.raises(ValueError, match="Failed to decrypt API key"):
         decrypt_api_key(None)
-    
+
     # Test with various invalid encrypted data formats
     invalid_encrypted_data = [
         "invalid_encrypted_data",  # Not base64
-        "not_a_base64_string",     # Not base64
-        "a" * 44,                  # Wrong length
-        "!" * 44,                  # Invalid base64 chars
-        "aGVsbG8=",               # Valid base64 but not encrypted
+        "not_a_base64_string",  # Not base64
+        "a" * 44,  # Wrong length
+        "!" * 44,  # Invalid base64 chars
+        "aGVsbG8=",  # Valid base64 but not encrypted
     ]
     for invalid_data in invalid_encrypted_data:
         with pytest.raises(ValueError, match="Failed to decrypt API key"):
