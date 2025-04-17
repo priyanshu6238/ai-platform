@@ -64,7 +64,7 @@ def test_create_new_project(db: Session, superuser_token_headers: dict[str, str]
 
     response = client.post(
         f"{settings.API_V1_STR}/projects/",
-        json=project_data.dict(),
+        json=project_data.model_dump(),
         headers=superuser_token_headers,
     )
 

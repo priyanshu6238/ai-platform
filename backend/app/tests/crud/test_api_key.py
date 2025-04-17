@@ -5,7 +5,7 @@ from app.crud import api_key as api_key_crud
 from app.models import APIKey, User, Organization
 from app.tests.utils.utils import random_email
 from app.core.security import get_password_hash
-from app.models.api_key import APIKeyCreateResponse
+from app.models.api_key import APIKey, APIKeyPublic
 
 
 # Helper function to create a user
@@ -129,7 +129,8 @@ def test_get_api_key_by_user_org_not_found(db: Session) -> None:
     assert result is None
 
 
-def test_get_api_key_by_value_invalid_key(db: Session) -> None:
+def test_verify_invalid_key(db: Session) -> None:
+    """Test that an invalid API key returns None."""
     user = create_test_user(db)
     org = create_test_organization(db)
 
