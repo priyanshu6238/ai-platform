@@ -4,7 +4,7 @@ from sqlmodel import Session, select
 from app.crud import api_key as api_key_crud
 from app.models import APIKey, User, Organization
 from app.tests.utils.utils import random_email
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, verify_password, decrypt_api_key
 
 
 # Helper function to create a user
@@ -48,7 +48,8 @@ def test_get_api_key(db: Session) -> None:
 
     assert retrieved_key is not None
     assert retrieved_key.id == created_key.id
-    assert retrieved_key.key == created_key.key
+    # The key should be decrypted when retrieved
+    assert verify_password(created_key.key, decrypt_api_key(retrieved_key.key))
 
 
 def test_get_api_key_not_found(db: Session) -> None:
@@ -67,8 +68,10 @@ def test_get_api_keys_by_organization(db: Session) -> None:
     api_keys = api_key_crud.get_api_keys_by_organization(db, org.id)
 
     assert len(api_keys) == 2
-    assert any(key.id == api_key1.id for key in api_keys)
-    assert any(key.id == api_key2.id for key in api_keys)
+    # Verify both keys can be decrypted and verified
+    for key in api_keys:
+        assert verify_password(api_key1.key if key.id == api_key1.id else api_key2.key, 
+                             decrypt_api_key(key.key))
 
 
 def test_delete_api_key(db: Session) -> None:
@@ -105,7 +108,8 @@ def test_get_api_key_by_value(db: Session) -> None:
 
     assert retrieved_key is not None
     assert retrieved_key.id == api_key.id
-    assert retrieved_key.key == api_key.key
+    # The key should be verified against the stored hash
+    assert verify_password(api_key.key, decrypt_api_key(retrieved_key.key))
 
 
 def test_get_api_key_by_user_org(db: Session) -> None:
@@ -119,6 +123,8 @@ def test_get_api_key_by_user_org(db: Session) -> None:
     assert retrieved_key.id == api_key.id
     assert retrieved_key.organization_id == org.id
     assert retrieved_key.user_id == user.id
+    # The key should already be decrypted by get_api_key_by_user_org
+    assert retrieved_key.key is not None
 
 
 def test_get_api_key_by_user_org_not_found(db: Session) -> None:
