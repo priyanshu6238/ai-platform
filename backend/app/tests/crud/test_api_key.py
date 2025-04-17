@@ -96,6 +96,7 @@ def test_delete_api_key_already_deleted(db: Session) -> None:
     with pytest.raises(ValueError, match="API key not found or already deleted"):
         api_key_crud.delete_api_key(db, api_key.id)
 
+
 def test_get_api_key_by_value(db: Session) -> None:
     user = create_test_user(db)
     org = create_test_organization(db)
