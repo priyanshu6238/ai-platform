@@ -30,9 +30,8 @@ def create_api_key(
     Generates a new API key for an organization and associates it with a user.
     Returns the API key details with the raw key (shown only once).
     """
-    # Generate raw key and its hash
-    raw_key = "ApiKey " + secrets.token_urlsafe(32)
-    hashed_key = get_password_hash(raw_key)
+    # Generate raw key and its hash using the helper function
+    raw_key, hashed_key = generate_api_key()
     encrypted_key = encrypt_api_key(hashed_key)
 
     # Create API key record with encrypted hashed key
