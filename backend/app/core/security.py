@@ -12,6 +12,7 @@ from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 # Generate a key for API key encryption
 def get_encryption_key() -> bytes:
     """Generate a key for API key encryption using the app's secret key."""
@@ -23,8 +24,10 @@ def get_encryption_key() -> bytes:
     )
     return base64.urlsafe_b64encode(kdf.derive(settings.SECRET_KEY.encode()))
 
+
 # Initialize Fernet with our encryption key
 _fernet = None
+
 
 def get_fernet() -> Fernet:
     """Get a Fernet instance with the encryption key."""
@@ -32,6 +35,7 @@ def get_fernet() -> Fernet:
     if _fernet is None:
         _fernet = Fernet(get_encryption_key())
     return _fernet
+
 
 ALGORITHM = "HS256"
 
