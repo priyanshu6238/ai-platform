@@ -115,18 +115,15 @@ def get_api_key_by_value(session: Session, api_key_value: str) -> APIKey | None:
 
 
 def get_api_key_by_user_org(
-    session: Session, organization_id: int, user_id: str
+    db: Session, organization_id: int, user_id: int
 ) -> APIKey | None:
-    """
-    Retrieve an API key for a specific user and organization.
-    """
+    """Get an API key by user and organization ID."""
     statement = select(APIKey).where(
         APIKey.organization_id == organization_id,
         APIKey.user_id == user_id,
         APIKey.is_deleted == False,
     )
-    api_key = session.exec(statement).first()
-    if api_key:
-        # Decrypt the key before returning
-        api_key.key = decrypt_api_key(api_key.key)
+    api_key = db.exec(statement).first()
+    # Return the API key record as is, without decryption
+    # Decryption should only happen when verifying the key
     return api_key
