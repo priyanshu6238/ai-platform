@@ -13,6 +13,7 @@ from sqlmodel import Session
 # Adjust the import based on your actual structure
 from app.models import Organization, Project, User, APIKey
 from passlib.context import CryptContext  # To hash passwords securely
+from app.core.security import get_password_hash, encrypt_api_key  # Add imports for encryption
 
 # revision identifiers, used by Alembic.
 revision = "77dc462dc6b0"
@@ -86,10 +87,17 @@ def create_user(session: Session, is_super: bool = True) -> User:
 
 def create_api_key(session: Session, user: User, organization: Organization) -> APIKey:
     """Create and return an API key for the user and organization."""
+    # Generate raw key
+    raw_key = "ApiKey " + secrets.token_urlsafe(32)
+    # Hash the key
+    hashed_key = get_password_hash(raw_key)
+    # Encrypt the hashed key
+    encrypted_key = encrypt_api_key(hashed_key)
+    
     api_key = APIKey(
         user_id=user.id,
         organization_id=organization.id,
-        key="ApiKey " + secrets.token_urlsafe(32),
+        key=encrypted_key,  # Store the encrypted hashed key
     )
     session.add(api_key)
     session.commit()
