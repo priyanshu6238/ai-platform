@@ -70,8 +70,10 @@ def test_get_api_keys_by_organization(db: Session) -> None:
     assert len(api_keys) == 2
     # Verify both keys can be decrypted and verified
     for key in api_keys:
-        assert verify_password(api_key1.key if key.id == api_key1.id else api_key2.key, 
-                             decrypt_api_key(key.key))
+        assert verify_password(
+            api_key1.key if key.id == api_key1.id else api_key2.key,
+            decrypt_api_key(key.key),
+        )
 
 
 def test_delete_api_key(db: Session) -> None:
