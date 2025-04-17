@@ -90,17 +90,19 @@ def create_user(session: Session, is_super: bool = True) -> User:
 
 def create_api_key(session: Session, user: User, organization: Organization) -> APIKey:
     """Create and return an API key for the user and organization."""
-    # Generate raw key
-    raw_key = "ApiKey " + secrets.token_urlsafe(32)
-    # Hash the key
-    hashed_key = get_password_hash(raw_key)
-    # Encrypt the hashed key
-    encrypted_key = encrypt_api_key(hashed_key)
-
+    # Generate token
+    token = secrets.token_urlsafe(32)
+    # Hash only the token part
+    hashed_token = get_password_hash(token)
+    # Create the full key with prefix
+    raw_key = "ApiKey " + token
+    # Encrypt the hashed token
+    encrypted_key = encrypt_api_key(hashed_token)
+    
     api_key = APIKey(
         user_id=user.id,
         organization_id=organization.id,
-        key=encrypted_key,  # Store the encrypted hashed key
+        key=encrypted_key,  # Store the encrypted hashed token
     )
     session.add(api_key)
     session.commit()
