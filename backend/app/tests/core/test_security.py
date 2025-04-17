@@ -12,18 +12,18 @@ def test_encrypt_decrypt_api_key():
     """Test that API key encryption and decryption works correctly."""
     # Test data
     test_key = "ApiKey test123456789"
-    
+
     # Encrypt the key
     encrypted_key = encrypt_api_key(test_key)
-    
+
     # Verify encryption worked
     assert encrypted_key is not None
     assert encrypted_key != test_key
     assert isinstance(encrypted_key, str)
-    
+
     # Decrypt the key
     decrypted_key = decrypt_api_key(encrypted_key)
-    
+
     # Verify decryption worked
     assert decrypted_key is not None
     assert decrypted_key == test_key
@@ -36,13 +36,13 @@ def test_encrypt_api_key_edge_cases():
     encrypted_empty = encrypt_api_key(empty_key)
     assert encrypted_empty is not None
     assert decrypt_api_key(encrypted_empty) == empty_key
-    
+
     # Test whitespace only
     whitespace_key = "   "
     encrypted_whitespace = encrypt_api_key(whitespace_key)
     assert encrypted_whitespace is not None
     assert decrypt_api_key(encrypted_whitespace) == whitespace_key
-    
+
     # Test very long input
     long_key = "ApiKey " + "a" * 1000
     encrypted_long = encrypt_api_key(long_key)
@@ -80,7 +80,7 @@ def test_decrypt_api_key_error_handling():
     # Test with invalid input
     with pytest.raises(ValueError, match="Failed to decrypt API key"):
         decrypt_api_key(None)
-    
+
     # Test with invalid encrypted data
     with pytest.raises(ValueError, match="Failed to decrypt API key"):
         decrypt_api_key("invalid_encrypted_data")
@@ -90,9 +90,9 @@ def test_get_encryption_key():
     """Test that encryption key generation works correctly."""
     # Get the encryption key
     key = get_encryption_key()
-    
+
     # Verify the key
     assert key is not None
     assert isinstance(key, bytes)
     # The key is base64 encoded, so it should be 44 bytes
-    assert len(key) == 44  # Base64 encoded Fernet key length is 44 bytes 
+    assert len(key) == 44  # Base64 encoded Fernet key length is 44 bytes
