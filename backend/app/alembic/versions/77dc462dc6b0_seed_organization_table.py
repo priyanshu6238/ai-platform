@@ -99,7 +99,7 @@ def create_api_key(session: Session, user: User, organization: Organization) -> 
     api_key = APIKey(
         user_id=user.id,
         organization_id=organization.id,
-        key=encrypted_key, 
+        key=encrypted_key,
     )
     session.add(api_key)
     session.commit()
