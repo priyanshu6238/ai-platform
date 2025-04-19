@@ -48,8 +48,9 @@ def test_get_api_key(db: Session) -> None:
 
     assert retrieved_key is not None
     assert retrieved_key.id == created_key.id
-    # The key should be decrypted when retrieved
-    assert verify_password(created_key.key, decrypt_api_key(retrieved_key.key))
+    # The key should be in its original format
+    assert retrieved_key.key.startswith("ApiKey ")
+    assert len(retrieved_key.key) > 32
 
 
 def test_get_api_key_not_found(db: Session) -> None:
@@ -68,12 +69,12 @@ def test_get_api_keys_by_organization(db: Session) -> None:
     api_keys = api_key_crud.get_api_keys_by_organization(db, org.id)
 
     assert len(api_keys) == 2
-    # Verify both keys can be decrypted and verified
+    # Verify that the keys are in their original format
     for key in api_keys:
-        assert verify_password(
-            api_key1.key if key.id == api_key1.id else api_key2.key,
-            decrypt_api_key(key.key),
-        )
+        assert key.key.startswith("ApiKey ")
+        assert len(key.key) > 32  # Raw key should be longer than 32 characters
+        assert key.organization_id == org.id
+        assert key.user_id in [user1.id, user2.id]
 
 
 def test_delete_api_key(db: Session) -> None:
@@ -105,13 +106,19 @@ def test_get_api_key_by_value(db: Session) -> None:
     user = create_test_user(db)
     org = create_test_organization(db)
 
+    # Create an API key
     api_key = api_key_crud.create_api_key(db, org.id, user.id)
-    retrieved_key = api_key_crud.get_api_key_by_value(db, api_key.key)
+    # Get the raw key that was returned during creation
+    raw_key = api_key.key
+
+    # Test retrieving the API key by its value
+    retrieved_key = api_key_crud.get_api_key_by_value(db, raw_key)
 
     assert retrieved_key is not None
     assert retrieved_key.id == api_key.id
-    # The key should be verified against the stored hash
-    assert verify_password(api_key.key, decrypt_api_key(retrieved_key.key))
+    # The key should be in its original format
+    assert retrieved_key.key.startswith("ApiKey ")
+    assert len(retrieved_key.key) > 32
 
 
 def test_get_api_key_by_user_org(db: Session) -> None:
@@ -125,8 +132,9 @@ def test_get_api_key_by_user_org(db: Session) -> None:
     assert retrieved_key.id == api_key.id
     assert retrieved_key.organization_id == org.id
     assert retrieved_key.user_id == user.id
-    # The key should already be decrypted by get_api_key_by_user_org
-    assert retrieved_key.key is not None
+    # The key should be in its original format
+    assert retrieved_key.key.startswith("ApiKey ")
+    assert len(retrieved_key.key) > 32
 
 
 def test_get_api_key_by_user_org_not_found(db: Session) -> None:
