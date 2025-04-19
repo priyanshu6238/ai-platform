@@ -32,11 +32,13 @@ def create_api_key(
     """
     # Generate raw key and its hash using the helper function
     raw_key, hashed_key = generate_api_key()
-    encrypted_key = encrypt_api_key(hashed_key)
+    encrypted_key = encrypt_api_key(
+        raw_key
+    )  # Encrypt the raw key instead of hashed key
 
-    # Create API key record with encrypted hashed key
+    # Create API key record with encrypted raw key
     api_key = APIKey(
-        key=encrypted_key,  # Store the encrypted hashed key
+        key=encrypted_key,  # Store the encrypted raw key
         organization_id=organization_id,
         user_id=user_id,
     )
@@ -55,14 +57,20 @@ def create_api_key(
 def get_api_key(session: Session, api_key_id: int) -> APIKeyPublic | None:
     """
     Retrieves an API key by its ID if it exists and is not deleted.
+    Returns the API key in its original format.
     """
     api_key = session.exec(
         select(APIKey).where(APIKey.id == api_key_id, APIKey.is_deleted == False)
     ).first()
 
     if api_key:
-        # Return the API key without decrypting (we don't want to expose the hashed key)
-        return APIKeyPublic.model_validate(api_key)
+        # Create a copy of the API key data
+        api_key_dict = api_key.model_dump()
+        # Decrypt the key
+        decrypted_key = decrypt_api_key(api_key.key)
+        api_key_dict["key"] = decrypted_key
+
+        return APIKeyPublic.model_validate(api_key_dict)
     return None
 
 
@@ -71,6 +79,7 @@ def get_api_keys_by_organization(
 ) -> list[APIKeyPublic]:
     """
     Retrieves all active API keys associated with an organization.
+    Returns the API keys in their original format.
     """
     api_keys = session.exec(
         select(APIKey).where(
@@ -78,8 +87,17 @@ def get_api_keys_by_organization(
         )
     ).all()
 
-    # Return the API keys without decrypting (we don't want to expose the hashed keys)
-    return [APIKeyPublic.model_validate(api_key) for api_key in api_keys]
+    raw_keys = []
+    for api_key in api_keys:
+        api_key_dict = api_key.model_dump()
+
+        decrypted_key = decrypt_api_key(api_key.key)
+
+        api_key_dict["key"] = decrypted_key
+
+        raw_keys.append(APIKeyPublic.model_validate(api_key_dict))
+
+    return raw_keys
 
 
 def delete_api_key(session: Session, api_key_id: int) -> None:
@@ -98,19 +116,22 @@ def delete_api_key(session: Session, api_key_id: int) -> None:
     session.commit()
 
 
-def get_api_key_by_value(session: Session, api_key_value: str) -> APIKey | None:
+def get_api_key_by_value(session: Session, api_key_value: str) -> APIKeyPublic | None:
     """
     Retrieve an API Key record by verifying the provided key against stored hashes.
+    Returns the API key in its original format.
     """
     # Get all active API keys
     api_keys = session.exec(select(APIKey).where(APIKey.is_deleted == False)).all()
 
-    # Check each key
     for api_key in api_keys:
-        # Decrypt the stored key before verification
         decrypted_key = decrypt_api_key(api_key.key)
-        if verify_password(api_key_value, decrypted_key):
-            return api_key
+        if api_key_value == decrypted_key:
+            api_key_dict = api_key.model_dump()
+
+            api_key_dict["key"] = decrypted_key
+
+            return APIKeyPublic.model_validate(api_key_dict)
     return None
 
 
@@ -124,6 +145,13 @@ def get_api_key_by_user_org(
         APIKey.is_deleted == False,
     )
     api_key = db.exec(statement).first()
-    # Return the API key record as is, without decryption
-    # Decryption should only happen when verifying the key
-    return api_key
+
+    if api_key:
+        api_key_dict = api_key.model_dump()
+
+        decrypted_key = decrypt_api_key(api_key.key)
+
+        api_key_dict["key"] = decrypted_key
+
+        return APIKey.model_validate(api_key_dict)
+    return None

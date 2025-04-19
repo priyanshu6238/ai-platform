@@ -92,9 +92,8 @@ def create_api_key(session: Session, user: User, organization: Organization) -> 
     """Create and return an API key for the user and organization."""
 
     token = secrets.token_urlsafe(32)
-    hashed_token = get_password_hash(token)
     raw_key = "ApiKey " + token
-    encrypted_key = encrypt_api_key(hashed_token)
+    encrypted_key = encrypt_api_key(raw_key)  # Encrypt the raw key directly
 
     api_key = APIKey(
         user_id=user.id,
