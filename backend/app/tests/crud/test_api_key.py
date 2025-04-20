@@ -116,7 +116,10 @@ def test_get_api_key_by_value(db: Session) -> None:
 
     assert retrieved_key is not None
     assert retrieved_key.id == api_key.id
+    assert retrieved_key.organization_id == org.id
+    assert retrieved_key.user_id == user.id
     # The key should be in its original format
+    assert retrieved_key.key == raw_key  # Should be exactly the same key
     assert retrieved_key.key.startswith("ApiKey ")
     assert len(retrieved_key.key) > 32
 
