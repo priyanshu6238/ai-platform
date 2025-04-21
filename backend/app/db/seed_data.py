@@ -1,8 +1,9 @@
 import uuid
 from sqlmodel import Session
 from app.models import Organization, Project, User, APIKey
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, create_access_token  # Import create_access_token
 import secrets
+from datetime import timedelta  # Import timedelta for token expiration
 
 
 def create_organization(session: Session, org_data: dict) -> Organization:
@@ -111,6 +112,10 @@ def seed_database(session: Session) -> None:
         for user_data in users:
             user = create_user(session, user_data)
             print(f"Created user: {user.email} (ID: {user.id})")
+            
+            # Generate and print access token for debugging or testing
+            access_token = create_access_token(subject={"user_id": user.id, "email": user.email}, expires_delta=timedelta(hours=1))
+            print(f"Access token for {user.email}: {access_token}")
             
             api_key = create_api_key(session, user, organization)
             print(f"Created API key for user {user.email}")
