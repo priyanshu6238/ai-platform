@@ -11,11 +11,20 @@ import secrets
 from datetime import timedelta  # Import timedelta for token expiration
 
 
+import logging # Or use print for simple scripts
+
 def load_seed_data() -> dict:
     """Load seed data from JSON file."""
     json_path = Path(__file__).parent / "seed_data.json"
-    with open(json_path, "r") as f:
-        return json.load(f)
+    try:
+        with open(json_path, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logging.error(f"Error: Seed data file not found at {json_path}")
+        raise # Or return None/empty dict and handle in caller
+    except json.JSONDecodeError as e:
+        logging.error(f"Error: Failed to decode JSON from {json_path}: {e}")
+        raise # Or return None/empty dict
 
 
 def create_organization(session: Session, org_data: dict) -> Organization:
@@ -62,7 +71,7 @@ def create_api_key(session: Session, user: User, organization: Organization) -> 
     api_key = APIKey(
         user_id=user.id,
         organization_id=organization.id,
-        key=raw_key,  # Store the raw key without encryption
+        key=raw_key, 
     )
     session.add(api_key)
     session.commit()
