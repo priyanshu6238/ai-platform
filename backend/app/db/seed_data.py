@@ -1,9 +1,18 @@
 import uuid
+import json
+from pathlib import Path
 from sqlmodel import Session
 from app.models import Organization, Project, User, APIKey
 from app.core.security import get_password_hash, create_access_token  # Import create_access_token
 import secrets
 from datetime import timedelta  # Import timedelta for token expiration
+
+
+def load_seed_data() -> dict:
+    """Load seed data from JSON file."""
+    json_path = Path(__file__).parent / "seed_data.json"
+    with open(json_path, "r") as f:
+        return json.load(f)
 
 
 def create_organization(session: Session, org_data: dict) -> Organization:
@@ -65,51 +74,20 @@ def seed_database(session: Session) -> None:
             print("Database already contains data. Skipping seeding.")
             return
             
+        # Load seed data from JSON
+        seed_data = load_seed_data()
+        
         # Create organization
-        organization = create_organization(session, {
-            "name": "Project Tech4dev",
-            "description": "Default organization for development",
-            "is_active": True
-        })
+        organization = create_organization(session, seed_data["organization"])
         print(f"Created organization: {organization.name} (ID: {organization.id})")
         
         # Create projects
-        projects = [
-            {
-                "name": "Glific",
-                "description": "Two way communication platform",
-                "is_active": True
-            },
-            {
-                "name": "Dalgo",
-                "description": "Data platform for the social sector",
-                "is_active": True
-            }
-        ]
-        
-        for project_data in projects:
+        for project_data in seed_data["projects"]:
             project = create_project(session, project_data, organization.id)
             print(f"Created project: {project.name} (ID: {project.id})")
         
         # Create users and their API keys
-        users = [
-            {
-                "email": "superuser@example.com",
-                "password": "superuser123",
-                "full_name": "SUPERUSER",
-                "is_superuser": True,
-                "is_active": True
-            },
-            {
-                "email": "admin@example.com",
-                "password": "admin123",
-                "full_name": "ADMIN",
-                "is_superuser": False,
-                "is_active": True
-            }
-        ]
-        
-        for user_data in users:
+        for user_data in seed_data["users"]:
             user = create_user(session, user_data)
             print(f"Created user: {user.email} (ID: {user.id})")
             

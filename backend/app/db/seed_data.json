@@ -1,0 +1,35 @@
+{
+    "organization": {
+        "name": "Project Tech4dev",
+        "description": "Default organization for development",
+        "is_active": true
+    },
+    "projects": [
+        {
+            "name": "Glific",
+            "description": "Two way communication platform",
+            "is_active": true
+        },
+        {
+            "name": "Dalgo",
+            "description": "Data platform for the social sector",
+            "is_active": true
+        }
+    ],
+    "users": [
+        {
+            "email": "superuser@example.com",
+            "password": "superuser123",
+            "full_name": "SUPERUSER",
+            "is_superuser": true,
+            "is_active": true
+        },
+        {
+            "email": "admin@example.com",
+            "password": "admin123",
+            "full_name": "ADMIN",
+            "is_superuser": false,
+            "is_active": true
+        }
+    ]
+}
