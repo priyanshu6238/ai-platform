@@ -105,8 +105,8 @@ def seed_database(session: Session) -> None:
             api_key = create_api_key(session, user, organization)
             print(f"Created API key for user {user.email}")
         session.commit()  # Commit to save users and API keys
-        session.refresh(user) 
-        session.refresh(api_key) # Refresh to get the ID
+        session.refresh(user)
+        session.refresh(api_key)  # Refresh to get the ID
         # Verify data was created
         org_count = session.query(Organization).count()
         project_count = session.query(Project).count()
