@@ -33,8 +33,6 @@ def create_organization(session: Session, org_data: dict) -> Organization:
     print(f"Creating organization: {org_data['name']}")
     organization = Organization(**org_data)
     session.add(organization)
-    session.commit()
-    session.refresh(organization)
     return organization
 
 
@@ -47,8 +45,6 @@ def create_project(
     )
     project = Project(**project_data, organization_id=organization_id)
     session.add(project)
-    session.commit()
-    session.refresh(project)
     return project
 
 
@@ -58,8 +54,6 @@ def create_user(session: Session, user_data: dict) -> User:
     hashed_password = get_password_hash(user_data.pop("password"))
     user = User(**user_data, hashed_password=hashed_password)
     session.add(user)
-    session.commit()
-    session.refresh(user)
     return user
 
 
@@ -75,8 +69,6 @@ def create_api_key(session: Session, user: User, organization: Organization) -> 
         key=raw_key,
     )
     session.add(api_key)
-    session.commit()
-    session.refresh(api_key)
     return api_key
 
 
@@ -96,20 +88,25 @@ def seed_database(session: Session) -> None:
 
         # Create organization
         organization = create_organization(session, seed_data["organization"])
+        session.commit()  # Commit to get the organization ID
+        session.refresh(organization)  # Refresh to get the ID
         print(f"Created organization: {organization.name} (ID: {organization.id})")
 
         # Create projects
         for project_data in seed_data["projects"]:
             project = create_project(session, project_data, organization.id)
             print(f"Created project: {project.name} (ID: {project.id})")
-
+        session.commit()  # Commit to save projects
+        session.refresh(project)  # Refresh to get the ID
         # Create users and their API keys
         for user_data in seed_data["users"]:
             user = create_user(session, user_data)
             print(f"Created user: {user.email} (ID: {user.id})")
             api_key = create_api_key(session, user, organization)
             print(f"Created API key for user {user.email}")
-
+        session.commit()  # Commit to save users and API keys
+        session.refresh(user) 
+        session.refresh(api_key) # Refresh to get the ID
         # Verify data was created
         org_count = session.query(Organization).count()
         project_count = session.query(Project).count()
