@@ -97,14 +97,6 @@ def seed_database(session: Session) -> None:
         for user_data in seed_data["users"]:
             user = create_user(session, user_data)
             print(f"Created user: {user.email} (ID: {user.id})")
-
-            # Generate and print access token for debugging or testing
-            access_token = create_access_token(
-                subject={"user_id": user.id, "email": user.email},
-                expires_delta=timedelta(hours=1),
-            )
-            print(f"Access token for {user.email}: {access_token}")
-
             api_key = create_api_key(session, user, organization)
             print(f"Created API key for user {user.email}")
 
