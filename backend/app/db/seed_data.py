@@ -3,7 +3,10 @@ import json
 from pathlib import Path
 from sqlmodel import Session
 from app.models import Organization, Project, User, APIKey
-from app.core.security import get_password_hash, create_access_token  # Import create_access_token
+from app.core.security import (
+    get_password_hash,
+    create_access_token,
+)  # Import create_access_token
 import secrets
 from datetime import timedelta  # Import timedelta for token expiration
 
@@ -25,9 +28,13 @@ def create_organization(session: Session, org_data: dict) -> Organization:
     return organization
 
 
-def create_project(session: Session, project_data: dict, organization_id: int) -> Project:
+def create_project(
+    session: Session, project_data: dict, organization_id: int
+) -> Project:
     """Create a project from data."""
-    print(f"Creating project: {project_data['name']} for organization {organization_id}")
+    print(
+        f"Creating project: {project_data['name']} for organization {organization_id}"
+    )
     project = Project(**project_data, organization_id=organization_id)
     session.add(project)
     session.commit()
@@ -38,7 +45,7 @@ def create_project(session: Session, project_data: dict, organization_id: int) -
 def create_user(session: Session, user_data: dict) -> User:
     """Create a user from data."""
     print(f"Creating user: {user_data['email']}")
-    hashed_password = get_password_hash(user_data.pop('password'))
+    hashed_password = get_password_hash(user_data.pop("password"))
     user = User(**user_data, hashed_password=hashed_password)
     session.add(user)
     session.commit()
@@ -66,50 +73,53 @@ def create_api_key(session: Session, user: User, organization: Organization) -> 
 def seed_database(session: Session) -> None:
     """Seed the database with initial data."""
     print("Starting database seeding...")
-    
+
     try:
         # Check if database is already seeded
         existing_orgs = session.query(Organization).count()
         if existing_orgs > 0:
             print("Database already contains data. Skipping seeding.")
             return
-            
+
         # Load seed data from JSON
         seed_data = load_seed_data()
-        
+
         # Create organization
         organization = create_organization(session, seed_data["organization"])
         print(f"Created organization: {organization.name} (ID: {organization.id})")
-        
+
         # Create projects
         for project_data in seed_data["projects"]:
             project = create_project(session, project_data, organization.id)
             print(f"Created project: {project.name} (ID: {project.id})")
-        
+
         # Create users and their API keys
         for user_data in seed_data["users"]:
             user = create_user(session, user_data)
             print(f"Created user: {user.email} (ID: {user.id})")
-            
+
             # Generate and print access token for debugging or testing
-            access_token = create_access_token(subject={"user_id": user.id, "email": user.email}, expires_delta=timedelta(hours=1))
+            access_token = create_access_token(
+                subject={"user_id": user.id, "email": user.email},
+                expires_delta=timedelta(hours=1),
+            )
             print(f"Access token for {user.email}: {access_token}")
-            
+
             api_key = create_api_key(session, user, organization)
             print(f"Created API key for user {user.email}")
-        
+
         # Verify data was created
         org_count = session.query(Organization).count()
         project_count = session.query(Project).count()
         user_count = session.query(User).count()
         api_key_count = session.query(APIKey).count()
-        
+
         print("\nSeeding verification:")
         print(f"Organizations created: {org_count}")
         print(f"Projects created: {project_count}")
         print(f"Users created: {user_count}")
         print(f"API keys created: {api_key_count}")
-        
+
         print("Database seeding completed successfully!")
     except Exception as e:
         print(f"Error during seeding: {e}")
@@ -130,6 +140,7 @@ def clear_database(session: Session) -> None:
 
 if __name__ == "__main__":
     from app.db.session import SessionLocal
+
     print("Initializing database session...")
     session = SessionLocal()
     try:
