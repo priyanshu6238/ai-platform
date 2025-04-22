@@ -8,4 +8,5 @@ def get_session():
 
 
 # For use in scripts that need a direct session instance
-SessionLocal = lambda: Session(engine)
+def SessionLocal() -> Session:
+    return Session(engine)
