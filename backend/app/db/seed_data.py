@@ -51,8 +51,10 @@ def create_project(
 def create_user(session: Session, user_data: dict) -> User:
     """Create a user from data."""
     print(f"Creating user: {user_data['email']}")
-    hashed_password = get_password_hash(user_data.pop("password"))
-    user = User(**user_data, hashed_password=hashed_password)
+    password = user_data["password"]
+    hashed_password = get_password_hash(password)
+    user_info = {k: v for k, v in user_data.items() if k != "password"}
+    user = User(**user_info, hashed_password=hashed_password)
     session.add(user)
     return user
 
