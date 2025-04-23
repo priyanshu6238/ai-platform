@@ -68,12 +68,9 @@ def create_organization(session: Session, org_data_raw: dict) -> Organization:
             id=org_data.id, name=org_data.name, is_active=org_data.is_active
         )
         session.add(organization)
-        session.commit()
-        session.refresh(organization)
         return organization
     except Exception as e:
         logging.error(f"Error creating organization: {e}")
-        session.rollback()
         raise
 
 
@@ -90,12 +87,9 @@ def create_project(session: Session, project_data_raw: dict) -> Project:
             organization_id=project_data.organization_id,
         )
         session.add(project)
-        session.commit()
-        session.refresh(project)
         return project
     except Exception as e:
         logging.error(f"Error creating project: {e}")
-        session.rollback()
         raise
 
 
@@ -114,12 +108,9 @@ def create_user(session: Session, user_data_raw: dict) -> User:
             hashed_password=hashed_password,
         )
         session.add(user)
-        session.commit()
-        session.refresh(user)
         return user
     except Exception as e:
         logging.error(f"Error creating user: {e}")
-        session.rollback()
         raise
 
 
@@ -142,29 +133,26 @@ def create_api_key(session: Session, api_key_data_raw: dict) -> APIKey:
                 api_key_data.created_at.replace("Z", "+00:00")
             )
         session.add(api_key)
-        session.commit()
-        session.refresh(api_key)
         return api_key
     except Exception as e:
         logging.error(f"Error creating API key: {e}")
-        session.rollback()
         raise
 
 
 def clear_database(session: Session) -> None:
     """Clear all seeded data from the database."""
-    print("Clearing existing data...")
+    logging.info("Clearing existing data...")
     session.exec(delete(APIKey))
     session.exec(delete(Project))
     session.exec(delete(Organization))
     session.exec(delete(User))
     session.commit()
-    print("Existing data cleared.")
+    logging.info("Existing data cleared.")
 
 
 def seed_database(session: Session) -> None:
     """Seed the database with initial data."""
-    print("Starting database seeding...")
+    logging.info("Starting database seeding...")
 
     try:
         # Clear existing data first
@@ -173,39 +161,54 @@ def seed_database(session: Session) -> None:
         # Load seed data from JSON
         seed_data = load_seed_data()
 
-        # Create organizations first
+        # Create organizations
+        organizations = []
         for org_data in seed_data["organization"]:
             organization = create_organization(session, org_data)
-            print(f"Created organization: {organization.name} (ID: {organization.id})")
+            organizations.append(organization)
+            logging.info(
+                f"Created organization: {organization.name} (ID: {organization.id})"
+            )
+        session.commit()
 
-        # Create users next
+        # Create users
+        users = []
         for user_data in seed_data["users"]:
             user = create_user(session, user_data)
-            print(f"Created user: {user.email} (ID: {user.id})")
+            users.append(user)
+            logging.info(f"Created user: {user.email} (ID: {user.id})")
+        session.commit()
 
         # Create projects
+        projects = []
         for project_data in seed_data["projects"]:
             project = create_project(session, project_data)
-            print(f"Created project: {project.name} (ID: {project.id})")
+            projects.append(project)
+            logging.info(f"Created project: {project.name} (ID: {project.id})")
+        session.commit()
 
         # Create API keys
+        api_keys = []
         for api_key_data in seed_data["apikeys"]:
             api_key = create_api_key(session, api_key_data)
-            print(f"Created API key (ID: {api_key.id})")
+            api_keys.append(api_key)
+            logging.info(f"Created API key (ID: {api_key.id})")
+        session.commit()
 
-        print("Database seeding completed successfully!")
+        logging.info("Database seeding completed successfully!")
     except Exception as e:
-        print(f"Error during seeding: {e}")
+        logging.error(f"Error during seeding: {e}")
         session.rollback()
         raise
 
 
 if __name__ == "__main__":
-    print("Initializing database session...")
+    logging.basicConfig(level=logging.INFO)
+    logging.info("Initializing database session...")
     with Session(engine) as session:
         try:
             seed_database(session)
-            print("Database seeded successfully!")
+            logging.info("Database seeded successfully!")
         except Exception as e:
-            print(f"Error seeding database: {e}")
+            logging.error(f"Error seeding database: {e}")
             session.rollback()
