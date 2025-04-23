@@ -169,7 +169,6 @@ def seed_database(session: Session) -> None:
             logging.info(
                 f"Created organization: {organization.name} (ID: {organization.id})"
             )
-        session.commit()
 
         # Create users
         users = []
@@ -177,7 +176,6 @@ def seed_database(session: Session) -> None:
             user = create_user(session, user_data)
             users.append(user)
             logging.info(f"Created user: {user.email} (ID: {user.id})")
-        session.commit()
 
         # Create projects
         projects = []
@@ -185,7 +183,6 @@ def seed_database(session: Session) -> None:
             project = create_project(session, project_data)
             projects.append(project)
             logging.info(f"Created project: {project.name} (ID: {project.id})")
-        session.commit()
 
         # Create API keys
         api_keys = []
@@ -193,9 +190,9 @@ def seed_database(session: Session) -> None:
             api_key = create_api_key(session, api_key_data)
             api_keys.append(api_key)
             logging.info(f"Created API key (ID: {api_key.id})")
-        session.commit()
 
         logging.info("Database seeding completed successfully!")
+        session.commit()
     except Exception as e:
         logging.error(f"Error during seeding: {e}")
         session.rollback()
