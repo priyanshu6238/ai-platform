@@ -48,7 +48,7 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    documents: list["Document"] = Relationship(
+    
         back_populates="owner", cascade_delete=True
     )
     projects: list["ProjectUser"] = Relationship(
