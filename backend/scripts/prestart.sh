@@ -1,4 +1,7 @@
-#!/bin/bash
+#! /usr/bin/env bash
+
+set -e
+set -x
 
 # Let the DB start
 python app/backend_pre_start.py
@@ -6,8 +9,15 @@ python app/backend_pre_start.py
 # Run migrations
 alembic upgrade head
 
-# Seed the database
-python scripts/seed_data/seed_data.py  # This runs the seeding process
+# Run seed data script
+python -m app.seed_data.seed_data
 
-# Create initial data in DB
-python app/initial_data.py
+# Initialize services
+services=(
+    app/initial_data.py
+    app/initial_storage.py
+)
+
+for i in ${services[@]}; do
+    python $i
+done
