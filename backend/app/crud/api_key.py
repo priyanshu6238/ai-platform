@@ -14,9 +14,7 @@ from app.core import settings
 from typing import List, Optional
 
 from app.models.api_key import APIKey, APIKeyPublic
-from app.models.user import User
-from app.models.organization import Organization
-from app.schemas import APIKeyCreate, APIKeyUpdate
+
 
 
 def generate_api_key() -> tuple[str, str]:

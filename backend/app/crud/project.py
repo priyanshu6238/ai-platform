@@ -1,5 +1,4 @@
-from typing import List, Optional
-
+from typing import Optional, List
 from sqlmodel import Session, select
 
 from app.models import Project, ProjectCreate
