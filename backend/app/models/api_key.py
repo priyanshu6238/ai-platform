@@ -1,15 +1,15 @@
-import uuid
 import secrets
 from datetime import datetime
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship
+from app.core.id_generator import generate_id
 
 
 class APIKeyBase(SQLModel):
     organization_id: int = Field(
         foreign_key="organization.id", nullable=False, ondelete="CASCADE"
     )
-    user_id: uuid.UUID = Field(
+    user_id: int = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
     key: str = Field(
@@ -23,7 +23,7 @@ class APIKeyPublic(APIKeyBase):
 
 
 class APIKey(APIKeyBase, table=True):
-    id: int = Field(default=None, primary_key=True)
+    id: int = Field(default_factory=lambda: generate_id(APIKey), primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     is_deleted: bool = Field(default=False, nullable=False)
     deleted_at: Optional[datetime] = Field(default=None, nullable=True)

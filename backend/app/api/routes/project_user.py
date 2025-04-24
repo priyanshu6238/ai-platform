@@ -1,4 +1,3 @@
-import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlmodel import Session
 from typing import Annotated
@@ -20,7 +19,7 @@ router = APIRouter(prefix="/project/users", tags=["project_users"])
 @router.post("/{user_id}", response_model=APIResponse[ProjectUserPublic])
 def add_user(
     request: Request,
-    user_id: uuid.UUID,
+    user_id: int,
     is_admin: bool = False,
     session: Session = Depends(get_db),
     current_user: UserProjectOrg = Depends(verify_user_project_organization),
@@ -75,7 +74,7 @@ def list_project_users(
 @router.delete("/{user_id}", response_model=APIResponse[Message])
 def remove_user(
     request: Request,
-    user_id: uuid.UUID,
+    user_id: int,
     session: Session = Depends(get_db),
     current_user: UserProjectOrg = Depends(verify_user_project_organization),
 ):

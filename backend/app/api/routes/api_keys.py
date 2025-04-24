@@ -1,4 +1,3 @@
-import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 from app.api.deps import get_db, get_current_active_superuser
@@ -20,7 +19,7 @@ router = APIRouter(prefix="/apikeys", tags=["API Keys"])
 @router.post("/", response_model=APIResponse[APIKeyPublic])
 def create_key(
     organization_id: int,
-    user_id: uuid.UUID,
+    user_id: int,
     session: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_superuser),
 ):

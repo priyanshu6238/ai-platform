@@ -1,4 +1,4 @@
-import uuid
+from typing import List, Optional
 from sqlmodel import Session, select, delete, func
 from app.models import ProjectUser, ProjectUserPublic, User, Project
 from datetime import datetime
@@ -21,7 +21,7 @@ def is_project_admin(session: Session, user_id: str, project_id: int) -> bool:
 
 # Add a user to a project
 def add_user_to_project(
-    session: Session, project_id: uuid.UUID, user_id: uuid.UUID, is_admin: bool = False
+    session: Session, project_id: int, user_id: int, is_admin: bool = False
 ) -> ProjectUserPublic:
     """
     Adds a user to a project.
@@ -46,7 +46,7 @@ def add_user_to_project(
 
 
 def remove_user_from_project(
-    session: Session, project_id: uuid.UUID, user_id: uuid.UUID
+    session: Session, project_id: int, user_id: int
 ) -> None:
     """
     Removes a user from a project.
@@ -68,7 +68,7 @@ def remove_user_from_project(
 
 
 def get_users_by_project(
-    session: Session, project_id: uuid.UUID, skip: int = 0, limit: int = 100
+    session: Session, project_id: int, skip: int = 0, limit: int = 100
 ) -> tuple[list[ProjectUserPublic], int]:
     """
     Returns paginated users in a given project along with the total count.
@@ -93,7 +93,7 @@ def get_users_by_project(
 
 # Check if a user belongs to an at least one project in organization
 def is_user_part_of_organization(
-    session: Session, user_id: uuid.UUID, org_id: int
+    session: Session, user_id: int, org_id: int
 ) -> bool:
     """
     Checks if a user is part of at least one project within the organization.

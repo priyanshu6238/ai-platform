@@ -1,7 +1,7 @@
-import uuid
 from datetime import datetime
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship
+from app.core.id_generator import generate_id
 
 
 # Shared properties
@@ -9,7 +9,7 @@ class ProjectUserBase(SQLModel):
     project_id: int = Field(
         foreign_key="project.id", nullable=False, ondelete="CASCADE"
     )
-    user_id: uuid.UUID = Field(
+    user_id: int = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
     is_admin: bool = Field(
@@ -25,7 +25,7 @@ class ProjectUserPublic(ProjectUserBase):
 
 # Database model, database table inferred from class name
 class ProjectUser(ProjectUserBase, table=True):
-    id: int = Field(default=None, primary_key=True)
+    id: int = Field(default_factory=lambda: generate_id(ProjectUser), primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     is_deleted: bool = Field(default=False, nullable=False)

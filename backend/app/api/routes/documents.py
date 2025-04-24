@@ -77,7 +77,7 @@ def upload_doc(
 def delete_doc(
     session: SessionDep,
     current_user: CurrentUser,
-    doc_id: UUID,
+    doc_id: int,
 ):
     crud = DocumentCrud(session, current_user.id)
     try:
@@ -96,7 +96,7 @@ def delete_doc(
 def doc_info(
     session: SessionDep,
     current_user: CurrentUser,
-    doc_id: UUID,
+    doc_id: int,
 ):
     crud = DocumentCrud(session, current_user.id)
     try:
