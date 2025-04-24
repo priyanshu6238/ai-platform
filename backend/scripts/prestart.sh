@@ -24,12 +24,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Initialize services
-services=(
-    app/initial_data.py
-    app/initial_storage.py
-)
-
 for i in ${services[@]}; do
     python $i
     if [ $? -ne 0 ]; then
