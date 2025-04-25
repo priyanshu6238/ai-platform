@@ -7,7 +7,7 @@ from app.core.security import get_password_hash, encrypt_api_key
 from app.core.db import engine
 import logging
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, UUID4, Field
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 
 
@@ -27,7 +27,7 @@ class ProjectData(BaseModel):
 
 
 class UserData(BaseModel):
-    id: str
+    id: int
     email: EmailStr
     full_name: str
     is_superuser: bool
@@ -38,7 +38,7 @@ class UserData(BaseModel):
 class APIKeyData(BaseModel):
     id: int
     organization_id: int
-    user_id: str
+    user_id: int
     api_key: str
     is_deleted: bool
     deleted_at: Optional[str] = None
@@ -100,7 +100,7 @@ def create_user(session: Session, user_data_raw: dict) -> User:
         logging.info(f"Creating user: {user_data.email}")
         hashed_password = get_password_hash(user_data.password)
         user = User(
-            id=uuid.UUID(user_data.id),
+            id=user_data.id,
             email=user_data.email,
             full_name=user_data.full_name,
             is_superuser=user_data.is_superuser,
@@ -123,7 +123,7 @@ def create_api_key(session: Session, api_key_data_raw: dict) -> APIKey:
         api_key = APIKey(
             id=api_key_data.id,
             organization_id=api_key_data.organization_id,
-            user_id=uuid.UUID(api_key_data.user_id),
+            user_id=api_key_data.user_id,
             key=encrypted_api_key,
             is_deleted=api_key_data.is_deleted,
             deleted_at=api_key_data.deleted_at,

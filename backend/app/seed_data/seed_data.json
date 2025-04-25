@@ -24,7 +24,7 @@
     ],
     "users": [
       {
-        "id": "4629f304-10c5-45f8-80f5-26ea1066a1cb",
+        "id": 46,
         "email": "superuser@example.com",
         "password": "changethis",
         "full_name": "SUPERUSER",
@@ -32,7 +32,7 @@
         "is_superuser": true
       },
       {
-        "id": "375503ac-f9d1-465e-8a87-be6974799ce1",
+        "id": 37,
         "email": "org_admin@example.com",
         "password": "admin123",
         "full_name": "ADMIN",
@@ -44,7 +44,7 @@
       {
         "id": 1,
         "organization_id": 1001,
-        "user_id": "4629f304-10c5-45f8-80f5-26ea1066a1cb",
+        "user_id": 46,
         "api_key": "ApiKey No3x47A5qoIGhm0kVKjQ77dhCqEdWRIQZlEPzzzh7i8",
         "is_deleted": false,
         "deleted_at": null
@@ -52,7 +52,7 @@
       {
         "id": 2,
         "organization_id": 1001,
-        "user_id": "375503ac-f9d1-465e-8a87-be6974799ce1",
+        "user_id": 37,
         "api_key": "ApiKey Px8y47B6roJHin1lWLkR88eiDrFdXSJRZmFQazzai8j9",
         "is_deleted": false,
         "deleted_at": null
