@@ -5,11 +5,15 @@ from app.models import Project, ProjectCreate
 
 
 def create_project(*, session: Session, project_create: ProjectCreate) -> Project:
-    db_project = Project.model_validate(project_create)
-    session.add(db_project)
-    session.commit()
-    session.refresh(db_project)
-    return db_project
+    try:
+        db_project = Project.model_validate(project_create)
+        session.add(db_project)
+        session.commit()
+        session.refresh(db_project)
+        return db_project
+    except Exception:
+        session.rollback()  # Rollback the session in case of an error
+        raise
 
 
 def get_project_by_id(*, session: Session, project_id: int) -> Optional[Project]:

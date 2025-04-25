@@ -26,14 +26,15 @@ def create_organization_and_project(db: Session) -> tuple[Organization, Project]
     """Helper function to create an organization and a project."""
 
     organization = Organization(
-        name=f"Test Organization {uuid.uuid4()}", is_active=True
+        name=f"Test Organization {int(uuid.uuid4().int % 1e6)}",  # Use int for unique name
+        is_active=True,
     )
     db.add(organization)
     db.commit()
     db.refresh(organization)
 
     # Ensure project with unique name
-    project_name = f"Test Project {uuid.uuid4()}"  # Ensuring unique project name
+    project_name = f"Test Project {int(uuid.uuid4().int % 1e6)}"  # Use int for unique name
     project = Project(
         name=project_name,
         description="A test project",
@@ -63,7 +64,7 @@ def test_add_user_to_project(
 
     assert response.status_code == 200, response.text
     added_user = response.json()["data"]
-    assert added_user["user_id"] == str(user.id)
+    assert added_user["user_id"] == user.id  # Use int comparison
     assert added_user["project_id"] == project.id
     assert added_user["is_admin"] is True
 
@@ -77,7 +78,7 @@ def test_add_user_not_found(
     organization, project = create_organization_and_project(db)
 
     response = client.post(
-        f"{settings.API_V1_STR}/project/users/{uuid.uuid4()}?is_admin=false&project_id={project.id}&organization_id={organization.id}",
+        f"{settings.API_V1_STR}/project/users/999999?is_admin=false&project_id={project.id}&organization_id={organization.id}",  # Use a non-existent int ID
         headers=superuser_token_headers,
     )
 
@@ -136,7 +137,7 @@ def test_remove_user_from_project(
         "message": "User removed from project successfully."
     }
 
-    # Ensure user is marked as deleted in the database (Fixed)
+    # Ensure user is marked as deleted in the database
     project_user = db.exec(
         select(ProjectUser).where(
             ProjectUser.project_id == project.id,

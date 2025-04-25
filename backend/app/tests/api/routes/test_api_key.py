@@ -26,7 +26,8 @@ def create_test_user(db: Session) -> User:
 
 def create_test_organization(db: Session) -> Organization:
     org = Organization(
-        name=f"Test Organization {uuid.uuid4()}", description="Test Organization"
+        name=f"Test Organization {int(uuid.uuid4().int % 1e6)}",  # Use int for unique name
+        description="Test Organization",
     )
     db.add(org)
     db.commit()
@@ -49,7 +50,7 @@ def test_create_api_key(db: Session, superuser_token_headers: dict[str, str]):
     assert "id" in data["data"]
     assert "key" in data["data"]
     assert data["data"]["organization_id"] == org.id
-    assert data["data"]["user_id"] == str(user.id)
+    assert data["data"]["user_id"] == user.id  # Use int comparison
 
 
 def test_create_duplicate_api_key(db: Session, superuser_token_headers: dict[str, str]):
@@ -86,7 +87,7 @@ def test_list_api_keys(db: Session, superuser_token_headers: dict[str, str]):
     assert isinstance(data["data"], list)
     assert len(data["data"]) > 0
     assert data["data"][0]["organization_id"] == org.id
-    assert data["data"][0]["user_id"] == str(user.id)
+    assert data["data"][0]["user_id"] == user.id  # Use int comparison
 
 
 def test_get_api_key(db: Session, superuser_token_headers: dict[str, str]):
@@ -104,7 +105,7 @@ def test_get_api_key(db: Session, superuser_token_headers: dict[str, str]):
     assert data["success"] is True
     assert data["data"]["id"] == api_key.id
     assert data["data"]["organization_id"] == api_key.organization_id
-    assert data["data"]["user_id"] == str(user.id)
+    assert data["data"]["user_id"] == user.id  # Use int comparison
 
 
 def test_get_nonexistent_api_key(db: Session, superuser_token_headers: dict[str, str]):
