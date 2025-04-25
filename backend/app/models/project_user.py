@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship
@@ -9,7 +8,7 @@ class ProjectUserBase(SQLModel):
     project_id: int = Field(
         foreign_key="project.id", nullable=False, ondelete="CASCADE"
     )
-    user_id: uuid.UUID = Field(
+    user_id: int = Field(  # Changed from uuid.UUID to int
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
     is_admin: bool = Field(

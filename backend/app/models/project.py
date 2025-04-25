@@ -10,7 +10,7 @@ class ProjectBase(SQLModel):
 
 # Properties to receive via API on creation
 class ProjectCreate(ProjectBase):
-    organization_id: int
+    organization_id: int  # This will reference the Organization ID, assumed to be int
 
 
 # Properties to receive via API on update, all are optional
@@ -22,20 +22,20 @@ class ProjectUpdate(SQLModel):
 
 # Database model for Project
 class Project(ProjectBase, table=True):
-    id: int = Field(default=None, primary_key=True)
-    organization_id: int = Field(foreign_key="organization.id", index=True)
+    id: int = Field(default=None, primary_key=True)  # ID as int
+    organization_id: int = Field(foreign_key="organization.id", index=True)  # Foreign Key to Organization, assumed int
 
     users: list["ProjectUser"] = Relationship(
-        back_populates="project", cascade_delete=True
+        back_populates="project", cascade_delete=True  # Cascade delete for related ProjectUser entries
     )
 
 
 # Properties to return via API
 class ProjectPublic(ProjectBase):
-    id: int
-    organization_id: int
+    id: int  # ID of the project
+    organization_id: int  # The associated organization ID
 
 
 class ProjectsPublic(SQLModel):
-    data: list[ProjectPublic]
-    count: int
+    data: list[ProjectPublic]  # List of public projects
+    count: int  # The total count of projects

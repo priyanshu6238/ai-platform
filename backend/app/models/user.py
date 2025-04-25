@@ -1,8 +1,5 @@
-import uuid
-
-from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
-
+from pydantic import EmailStr
 
 # Shared properties
 class UserBase(SQLModel):
@@ -46,7 +43,7 @@ class UpdatePassword(SQLModel):
 
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    id: int = Field(default=None, primary_key=True)  # Changed to int from uuid.UUID
     hashed_password: str
     documents: list["Document"] = Relationship(
         back_populates="owner", cascade_delete=True
@@ -58,7 +55,7 @@ class User(UserBase, table=True):
 
 
 class UserOrganization(UserBase):
-    id: uuid.UUID
+    id: int  # Changed to int from uuid.UUID
     organization_id: int | None
 
 
@@ -68,7 +65,7 @@ class UserProjectOrg(UserOrganization):
 
 # Properties to return via API, id is always required
 class UserPublic(UserBase):
-    id: uuid.UUID
+    id: int  # Changed to int from uuid.UUID
 
 
 class UsersPublic(SQLModel):
