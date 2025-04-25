@@ -1,5 +1,4 @@
 import warnings
-from uuid import uuid4
 from typing import List
 
 from fastapi import APIRouter, File, UploadFile, HTTPException, Query
@@ -79,7 +78,7 @@ def upload_doc(
 def delete_doc(
     session: SessionDep,
     current_user: CurrentUser,
-    doc_id: UUID,
+    doc_id: int,
 ):
     crud = DocumentCrud(session, current_user.id)
     try:
@@ -98,7 +97,7 @@ def delete_doc(
 def doc_info(
     session: SessionDep,
     current_user: CurrentUser,
-    doc_id: UUID,
+    doc_id: int,
 ):
     crud = DocumentCrud(session, current_user.id)
     try:
