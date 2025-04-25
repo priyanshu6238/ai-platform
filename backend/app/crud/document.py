@@ -1,4 +1,3 @@
-from uuid import UUID
 from typing import Optional
 
 from sqlmodel import Session, select, and_
@@ -8,11 +7,11 @@ from app.core.util import now
 
 
 class DocumentCrud:
-    def __init__(self, session: Session, owner_id: UUID):
+    def __init__(self, session: Session, owner_id: int):
         self.session = session
         self.owner_id = owner_id
 
-    def read_one(self, doc_id: UUID):
+    def read_one(self, doc_id: int):
         statement = select(Document).where(
             and_(
                 Document.owner_id == self.owner_id,
@@ -60,7 +59,7 @@ class DocumentCrud:
 
         return document
 
-    def delete(self, doc_id: UUID):
+    def delete(self, doc_id: int):
         document = self.read_one(doc_id)
         document.deleted_at = now()
 

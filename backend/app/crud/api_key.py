@@ -1,4 +1,3 @@
-import uuid
 import secrets
 from datetime import datetime
 from sqlmodel import Session, select
@@ -8,11 +7,6 @@ from app.core.security import (
     encrypt_api_key,
     decrypt_api_key,
 )
-import base64
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from app.core import settings
-
 from app.models.api_key import APIKey, APIKeyPublic
 
 
@@ -24,7 +18,7 @@ def generate_api_key() -> tuple[str, str]:
 
 
 def create_api_key(
-    session: Session, organization_id: uuid.UUID, user_id: uuid.UUID
+    session: Session, organization_id: int, user_id: int
 ) -> APIKeyPublic:
     """
     Generates a new API key for an organization and associates it with a user.
@@ -75,7 +69,7 @@ def get_api_key(session: Session, api_key_id: int) -> APIKeyPublic | None:
 
 
 def get_api_keys_by_organization(
-    session: Session, organization_id: uuid.UUID
+    session: Session, organization_id: int
 ) -> list[APIKeyPublic]:
     """
     Retrieves all active API keys associated with an organization.

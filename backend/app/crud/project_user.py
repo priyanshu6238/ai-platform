@@ -1,10 +1,9 @@
-import uuid
 from sqlmodel import Session, select, delete, func
 from app.models import ProjectUser, ProjectUserPublic, User, Project
 from datetime import datetime
 
 
-def is_project_admin(session: Session, user_id: str, project_id: int) -> bool:
+def is_project_admin(session: Session, user_id: int, project_id: int) -> bool:
     """
     Checks if a user is an admin of the given project.
     """
@@ -21,7 +20,7 @@ def is_project_admin(session: Session, user_id: str, project_id: int) -> bool:
 
 # Add a user to a project
 def add_user_to_project(
-    session: Session, project_id: uuid.UUID, user_id: uuid.UUID, is_admin: bool = False
+    session: Session, project_id: int, user_id: int, is_admin: bool = False
 ) -> ProjectUserPublic:
     """
     Adds a user to a project.
@@ -46,7 +45,7 @@ def add_user_to_project(
 
 
 def remove_user_from_project(
-    session: Session, project_id: uuid.UUID, user_id: uuid.UUID
+    session: Session, project_id: int, user_id: int
 ) -> None:
     """
     Removes a user from a project.
@@ -63,12 +62,12 @@ def remove_user_from_project(
 
     project_user.is_deleted = True
     project_user.deleted_at = datetime.utcnow()
-    session.add(project_user)  # Required to mark as dirty for commit
+    session.add(project_user)
     session.commit()
 
 
 def get_users_by_project(
-    session: Session, project_id: uuid.UUID, skip: int = 0, limit: int = 100
+    session: Session, project_id: int, skip: int = 0, limit: int = 100
 ) -> tuple[list[ProjectUserPublic], int]:
     """
     Returns paginated users in a given project along with the total count.
@@ -91,9 +90,9 @@ def get_users_by_project(
     return [ProjectUserPublic.model_validate(user) for user in users], total_count
 
 
-# Check if a user belongs to an at least one project in organization
+# Check if a user belongs to at least one project in organization
 def is_user_part_of_organization(
-    session: Session, user_id: uuid.UUID, org_id: int
+    session: Session, user_id: int, org_id: int
 ) -> bool:
     """
     Checks if a user is part of at least one project within the organization.
