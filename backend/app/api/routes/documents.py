@@ -1,5 +1,5 @@
 import warnings
-from uuid import UUID, uuid4
+from uuid import uuid4
 from typing import List
 
 from fastapi import APIRouter, File, UploadFile, HTTPException, Query
@@ -14,7 +14,6 @@ from app.core.cloud import AmazonCloudStorage, CloudStorageError
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
-
 def raise_from_unknown(error: Exception):
     warnings.warn(
         'Unexpected exception "{}": {}'.format(
@@ -23,7 +22,6 @@ def raise_from_unknown(error: Exception):
         )
     )
     raise HTTPException(status_code=500, detail=str(error))
-
 
 @router.get("/ls", response_model=APIResponse[List[Document]])
 def list_docs(
@@ -50,7 +48,9 @@ def upload_doc(
     src: UploadFile = File(...),
 ):
     storage = AmazonCloudStorage(current_user)
-    basename = uuid4()
+    # Convert UUID to a random integer in the range 0 to 999,999
+    basename = int(uuid4().int % 1e6)
+
     try:
         object_store_url = storage.put(src, str(basename))
     except CloudStorageError as err:
@@ -60,7 +60,9 @@ def upload_doc(
 
     crud = DocumentCrud(session, current_user.id)
     document = Document(
-        id=basename, fname=src.filename, object_store_url=str(object_store_url)
+        id=basename,  # Use the integer-based ID instead of UUID
+        fname=src.filename,
+        object_store_url=str(object_store_url),
     )
 
     try:

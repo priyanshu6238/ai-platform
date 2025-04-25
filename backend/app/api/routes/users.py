@@ -1,6 +1,4 @@
-import uuid
 from typing import Any
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, delete, func, select
 
@@ -37,7 +35,6 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     """
     Retrieve users.
     """
-
     count_statement = select(func.count()).select_from(User)
     count = session.exec(count_statement).one()
 
@@ -81,7 +78,6 @@ def update_user_me(
     """
     Update own user.
     """
-
     if user_in.email:
         existing_user = get_user_by_email(session=session, email=user_in.email)
         if existing_user and existing_user.id != current_user.id:
@@ -156,7 +152,9 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
 
 @router.get("/{user_id}", response_model=UserPublic)
 def read_user_by_id(
-    user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
+    user_id: int,  # Changed from uuid.UUID to int
+    session: SessionDep,
+    current_user: CurrentUser,
 ) -> Any:
     """
     Get a specific user by id.
@@ -180,7 +178,7 @@ def read_user_by_id(
 def update_user_endpoint(
     *,
     session: SessionDep,
-    user_id: uuid.UUID,
+    user_id: int,  # Changed from uuid.UUID to int
     user_in: UserUpdate,
 ) -> Any:
     """
@@ -206,7 +204,7 @@ def update_user_endpoint(
 
 @router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])
 def delete_user(
-    session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
+    session: SessionDep, current_user: CurrentUser, user_id: int  # Changed from uuid.UUID to int
 ) -> Message:
     """
     Delete a user.

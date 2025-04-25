@@ -1,4 +1,3 @@
-import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlmodel import Session
 from typing import Annotated
@@ -12,7 +11,6 @@ from app.crud.project_user import (
 from app.models import User, ProjectUserPublic, UserProjectOrg, Message
 from app.utils import APIResponse
 
-
 router = APIRouter(prefix="/project/users", tags=["project_users"])
 
 
@@ -20,7 +18,7 @@ router = APIRouter(prefix="/project/users", tags=["project_users"])
 @router.post("/{user_id}", response_model=APIResponse[ProjectUserPublic])
 def add_user(
     request: Request,
-    user_id: uuid.UUID,
+    user_id: int,  # Changed from uuid.UUID to int
     is_admin: bool = False,
     session: Session = Depends(get_db),
     current_user: UserProjectOrg = Depends(verify_user_project_organization),
@@ -30,7 +28,7 @@ def add_user(
     """
     project_id = current_user.project_id
 
-    user = session.get(User, user_id)
+    user = session.get(User, user_id)  # Assuming user_id is now an integer
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -75,7 +73,7 @@ def list_project_users(
 @router.delete("/{user_id}", response_model=APIResponse[Message])
 def remove_user(
     request: Request,
-    user_id: uuid.UUID,
+    user_id: int,  # Changed from uuid.UUID to int
     session: Session = Depends(get_db),
     current_user: UserProjectOrg = Depends(verify_user_project_organization),
 ):
@@ -85,7 +83,7 @@ def remove_user(
     # Only allow superusers or project admins to remove user
     project_id = current_user.project_id
 
-    user = session.get(User, user_id)
+    user = session.get(User, user_id)  # Assuming user_id is now an integer
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
