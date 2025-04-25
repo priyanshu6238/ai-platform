@@ -112,8 +112,9 @@ def test_get_nonexistent_api_key(db: Session, superuser_token_headers: dict[str,
     user = create_test_user(db)
     org = create_test_organization(db)
 
+    random_id = int(uuid.uuid4().int % 1e6)  # Generate a random integer
     response = client.get(
-        f"{settings.API_V1_STR}/apikeys/999999",
+        f"{settings.API_V1_STR}/apikeys/{random_id}",
         params={"organization_id": org.id, "user_id": user.id},
         headers=superuser_token_headers,
     )

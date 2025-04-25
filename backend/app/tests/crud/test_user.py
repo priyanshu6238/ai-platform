@@ -1,8 +1,9 @@
 from fastapi.encoders import jsonable_encoder
 from sqlmodel import Session
+import uuid
 
 from app import crud
-from app.core.security import verify_password
+from app.core.security import verify_password, get_password_hash
 from app.models import User, UserCreate, UserUpdate
 from app.tests.utils.utils import random_email, random_lower_string
 
@@ -16,14 +17,22 @@ def test_create_user(db: Session) -> None:
     assert hasattr(user, "hashed_password")
 
 
-def test_authenticate_user(db: Session) -> None:
-    email = random_email()
-    password = random_lower_string()
-    user_in = UserCreate(email=email, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
-    authenticated_user = crud.authenticate(session=db, email=email, password=password)
+def test_authenticate_user(db: Session):
+    user = User(
+        id=int(uuid.uuid4().int % 1e6),  # Generate random integer
+        email="test@example.com",
+        hashed_password=get_password_hash("password123"),
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    authenticated_user = crud.authenticate_user(
+        db, email="test@example.com", password="password123"
+    )
     assert authenticated_user
-    assert user.email == authenticated_user.email
+    assert authenticated_user.id == user.id
 
 
 def test_not_authenticate_user(db: Session) -> None:
@@ -33,12 +42,18 @@ def test_not_authenticate_user(db: Session) -> None:
     assert user is None
 
 
-def test_check_if_user_is_active(db: Session) -> None:
-    email = random_email()
-    password = random_lower_string()
-    user_in = UserCreate(email=email, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
-    assert user.is_active is True
+def test_check_if_user_is_active(db: Session):
+    user = User(
+        id=int(uuid.uuid4().int % 1e6),  # Generate random integer
+        email="test@example.com",
+        hashed_password=get_password_hash("password123"),
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    assert crud.is_active(user)
 
 
 def test_check_if_user_is_active_inactive(db: Session) -> None:

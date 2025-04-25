@@ -105,8 +105,9 @@ def test_get_existing_user_current_user(client: TestClient, db: Session) -> None
 def test_get_existing_user_permissions_error(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ) -> None:
+    random_id = int(uuid.uuid4().int % 1e6)  # Generate a random integer
     r = client.get(
-        f"{settings.API_V1_STR}/users/{uuid.uuid4()}",
+        f"{settings.API_V1_STR}/users/{random_id}",
         headers=normal_user_token_headers,
     )
     assert r.status_code == 403
@@ -349,9 +350,10 @@ def test_update_user(
 def test_update_user_not_exists(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
+    random_id = int(uuid.uuid4().int % 1e6)  # Generate a random integer
     data = {"full_name": "Updated_full_name"}
     r = client.patch(
-        f"{settings.API_V1_STR}/users/{uuid.uuid4()}",
+        f"{settings.API_V1_STR}/users/{random_id}",
         headers=superuser_token_headers,
         json=data,
     )
@@ -447,8 +449,9 @@ def test_delete_user_super_user(
 def test_delete_user_not_found(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
+    random_id = int(uuid.uuid4().int % 1e6)  # Generate a random integer
     r = client.delete(
-        f"{settings.API_V1_STR}/users/{uuid.uuid4()}",
+        f"{settings.API_V1_STR}/users/{random_id}",
         headers=superuser_token_headers,
     )
     assert r.status_code == 404
