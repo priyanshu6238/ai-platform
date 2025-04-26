@@ -63,7 +63,7 @@ def test_add_user_to_project(
 
     assert response.status_code == 200, response.text
     added_user = response.json()["data"]
-    assert added_user["user_id"] == str(user.id)
+    assert added_user["user_id"] == user.id
     assert added_user["project_id"] == project.id
     assert added_user["is_admin"] is True
 
@@ -77,7 +77,7 @@ def test_add_user_not_found(
     organization, project = create_organization_and_project(db)
 
     response = client.post(
-        f"{settings.API_V1_STR}/project/users/{uuid.uuid4()}?is_admin=false&project_id={project.id}&organization_id={organization.id}",
+        f"{settings.API_V1_STR}/project/users/{int(uuid.uuid4().int % 1e6)}?is_admin=false&project_id={project.id}&organization_id={organization.id}",
         headers=superuser_token_headers,
     )
 

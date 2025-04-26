@@ -40,7 +40,7 @@ class DocumentIndexGenerator:
         return uu_id
 
     def peek(self):
-        return UUID(int=self.start)
+        return self.start
 
 
 class DocumentMaker:
@@ -53,8 +53,7 @@ class DocumentMaker:
 
     def __next__(self):
         doc_id = next(self.index)
-        args = str(doc_id).split("-")
-        fname = Path("/", *args).with_suffix(".xyz")
+        fname = Path(f"/{doc_id}").with_suffix(".xyz")
 
         return Document(
             id=doc_id,
@@ -119,7 +118,7 @@ class Route:
         return self._empty._replace(**kwargs)
 
     def append(self, doc: Document):
-        endpoint = Path(self.endpoint, str(doc.id))
+        endpoint = Path(self.endpoint, doc.id)
         return type(self)(endpoint, **self.qs_args)
 
 
@@ -143,7 +142,7 @@ class DocumentComparator:
 
     @to_string.register
     @staticmethod
-    def _(value: UUID):
+    def _(value: int):
         return str(value)
 
     @to_string.register

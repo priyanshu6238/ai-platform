@@ -111,7 +111,7 @@ def test_remove_user_from_project_not_member(db: Session) -> None:
     organization, project = create_organization_and_project(db)
 
     project_id = project.id
-    user_id = uuid.uuid4()
+    user_id = int(uuid.uuid4().int % 1e6)
 
     with pytest.raises(
         ValueError, match="User is not a member of this project or already removed"

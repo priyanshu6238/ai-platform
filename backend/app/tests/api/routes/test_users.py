@@ -106,7 +106,7 @@ def test_get_existing_user_permissions_error(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ) -> None:
     r = client.get(
-        f"{settings.API_V1_STR}/users/{uuid.uuid4()}",
+        f"{settings.API_V1_STR}/users/{int(uuid.uuid4().int % 1e6)}",
         headers=normal_user_token_headers,
     )
     assert r.status_code == 403
@@ -448,7 +448,7 @@ def test_delete_user_not_found(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
     r = client.delete(
-        f"{settings.API_V1_STR}/users/{uuid.uuid4()}",
+        f"{settings.API_V1_STR}/users/{int(uuid.uuid4().int % 1e6)}",
         headers=superuser_token_headers,
     )
     assert r.status_code == 404

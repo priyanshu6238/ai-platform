@@ -142,6 +142,6 @@ def test_get_api_key_by_user_org(db: Session) -> None:
 
 def test_get_api_key_by_user_org_not_found(db: Session) -> None:
     org = create_test_organization(db)
-    user_id = uuid.uuid4()
+    user_id = int(uuid.uuid4().int % 1e6)
     result = api_key_crud.get_api_key_by_user_org(db, org.id, user_id)
     assert result is None
