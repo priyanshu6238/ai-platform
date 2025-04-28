@@ -7,6 +7,7 @@ from datetime import datetime
 class CredsBase(SQLModel):
     organization_id: int = Field(foreign_key="organization.id")
     is_active: bool = True
+    provider: str = Field(default="")
 
 
 class CredsCreate(CredsBase):
@@ -18,6 +19,7 @@ class CredsUpdate(SQLModel):
         default=None, sa_column=sa.Column(sa.JSON)
     )
     is_active: Optional[bool] = Field(default=None)
+    provider: Optional[str] = Field(default=None)
 
 
 class Credential(CredsBase, table=True):

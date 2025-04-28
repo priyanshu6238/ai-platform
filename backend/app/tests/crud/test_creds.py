@@ -66,7 +66,8 @@ def test_credential(db: Session):
     creds_data = CredsCreate(
         organization_id=org.id,  # Use the created organization_id
         is_active=True,
-        credential={"openai": {"api_key": api_key}},
+        provider="openai",
+        credential={"api_key": api_key},
     )
 
     creds = set_creds_for_org(session=db, creds_add=creds_data)
@@ -92,7 +93,7 @@ def test_get_creds_by_org(db: Session, test_credential):
 
 def test_update_creds_for_org(db: Session, test_credential):
     creds = test_credential  # Using the fixture
-    updated_creds_data = CredsUpdate(credential={"openai": {"api_key": "sk-newkey"}})
+    updated_creds_data = CredsUpdate(credential={"api_key": "sk-newkey"})
 
     updated_creds = update_creds_for_org(
         session=db, org_id=creds.organization_id, creds_in=updated_creds_data

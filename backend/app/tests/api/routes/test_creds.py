@@ -34,10 +34,13 @@ def create_organization_and_creds(db: Session, superuser_token_headers: dict[str
     db.commit()
     db.refresh(org)
 
+    # Create credentials with provider
+    api_key = "sk-" + generate_random_string(10)
     creds_data = CredsCreate(
         organization_id=org.id,
         is_active=True,
-        credential={"openai": {"api_key": "sk-" + generate_random_string(10)}},
+        provider="openai",
+        credential={"api_key": api_key},
     )
     return org, creds_data
 
@@ -59,7 +62,8 @@ def test_set_creds_for_org(db: Session, superuser_token_headers: dict[str, str])
     creds_data = {
         "organization_id": unique_org_id,
         "is_active": True,
-        "credential": {"openai": {"api_key": api_key}},
+        "provider": "openai",
+        "credential": {"api_key": api_key},
     }
 
     response = client.post(
@@ -96,7 +100,7 @@ def test_read_credentials_with_creds(
     assert "credential" in response_data["data"]
     assert (
         response_data["data"]["credential"]["openai"]["api_key"]
-        == creds_data.credential["openai"]["api_key"]
+        == creds_data.credential["api_key"]
     )
 
 
@@ -148,11 +152,8 @@ def test_read_api_key(
     response_data = response.json()
 
     assert "data" in response_data
-
     assert "api_key" in response_data["data"]
-    assert (
-        response_data["data"]["api_key"] == creds_data.credential["openai"]["api_key"]
-    )
+    assert response_data["data"]["api_key"] == creds_data.credential["api_key"]
 
 
 def test_read_api_key_not_found(
@@ -179,10 +180,7 @@ def test_update_credentials(
 
     update_data = {
         "credential": {
-            "openai": {
-                "api_key": "sk-"
-                + generate_random_string()  # Generate a new API key for the update
-            }
+            "api_key": "sk-" + generate_random_string()
         }
     }
 
@@ -192,18 +190,11 @@ def test_update_credentials(
         headers=superuser_token_headers,
     )
 
-    print(response.json())
-
     assert response.status_code == 200
     response_data = response.json()
 
     assert "data" in response_data
-
-    assert (
-        response_data["data"]["credential"]["openai"]["api_key"]
-        == update_data["credential"]["openai"]["api_key"]
-    )
-
+    assert response_data["data"]["credential"]["openai"]["api_key"] == update_data["credential"]["api_key"]
     assert response_data["data"]["updated_at"] is not None
 
 

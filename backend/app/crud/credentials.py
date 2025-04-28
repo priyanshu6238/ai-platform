@@ -7,7 +7,18 @@ from app.models import Credential, CredsCreate, CredsUpdate
 
 
 def set_creds_for_org(*, session: Session, creds_add: CredsCreate) -> Credential:
-    creds = Credential.model_validate(creds_add)
+    # Create a new credential structure with provider
+    new_credential = {
+        creds_add.provider: creds_add.credential
+    }
+    
+    # Create the credential object with the new structure
+    creds = Credential(
+        organization_id=creds_add.organization_id,
+        is_active=creds_add.is_active,
+        provider=creds_add.provider,
+        credential=new_credential
+    )
 
     # Set the inserted_at timestamp (current UTC time)
     creds.inserted_at = datetime.utcnow()
@@ -59,6 +70,12 @@ def update_creds_for_org(
 
     # Update the credentials data with the provided values
     creds_data = creds_in.dict(exclude_unset=True)
+
+    # If credential is being updated, wrap it in the provider structure
+    if "credential" in creds_data:
+        creds_data["credential"] = {
+            creds.provider: creds_data["credential"]
+        }
 
     # Directly update the fields on the original creds object instead of creating a new one
     for key, value in creds_data.items():
