@@ -178,11 +178,7 @@ def test_update_credentials(
     org, creds_data = create_organization_and_creds
     set_creds_for_org(session=db, creds_add=creds_data)
 
-    update_data = {
-        "credential": {
-            "api_key": "sk-" + generate_random_string()
-        }
-    }
+    update_data = {"credential": {"api_key": "sk-" + generate_random_string()}}
 
     response = client.patch(
         f"{settings.API_V1_STR}/credentials/{org.id}",
@@ -194,7 +190,10 @@ def test_update_credentials(
     response_data = response.json()
 
     assert "data" in response_data
-    assert response_data["data"]["credential"]["openai"]["api_key"] == update_data["credential"]["api_key"]
+    assert (
+        response_data["data"]["credential"]["openai"]["api_key"]
+        == update_data["credential"]["api_key"]
+    )
     assert response_data["data"]["updated_at"] is not None
 
 
