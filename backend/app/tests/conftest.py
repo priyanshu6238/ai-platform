@@ -13,6 +13,7 @@ from app.models import (
     Project,
     ProjectUser,
     User,
+    Credential,
 )
 from app.tests.utils.user import authentication_token_from_email
 from app.tests.utils.utils import get_superuser_token_headers
@@ -29,6 +30,7 @@ def db() -> Generator[Session, None, None]:
         session.execute(delete(Organization))
         session.execute(delete(APIKey))
         session.execute(delete(User))
+        session.execute(delete(Credential))
         session.commit()
 
 
@@ -48,3 +50,16 @@ def normal_user_token_headers(client: TestClient, db: Session) -> dict[str, str]
     return authentication_token_from_email(
         client=client, email=settings.EMAIL_TEST_USER, db=db
     )
+
+
+@pytest.fixture(autouse=True)
+def cleanup_after_tests(db: Session):
+    """Cleanup fixture that runs after each test to ensure proper deletion order"""
+    yield
+    # Delete in correct order to respect foreign key constraints
+    db.query(ProjectUser).delete()
+    db.query(Project).delete()
+    db.query(APIKey).delete()
+    db.query(Credential).delete()
+    db.query(Organization).delete()
+    db.commit()
