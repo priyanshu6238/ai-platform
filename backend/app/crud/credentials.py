@@ -69,8 +69,20 @@ def update_creds_for_org(
     # Update the credentials data with the provided values
     creds_data = creds_in.dict(exclude_unset=True)
 
-    # If credential is being updated, wrap it in the provider structure
-    if "credential" in creds_data:
+    # Handle provider update
+    if "provider" in creds_data:
+        new_provider = creds_data["provider"]
+        # If credential exists in update data, use that
+        if "credential" in creds_data:
+            creds_data["credential"] = {new_provider: creds_data["credential"]}
+        else:
+            # Otherwise, move existing credential to new provider
+            if creds.credential and creds.provider in creds.credential:
+                existing_credential = creds.credential[creds.provider]
+                creds_data["credential"] = {new_provider: existing_credential}
+
+    # If only credential is being updated (no provider change)
+    elif "credential" in creds_data:
         creds_data["credential"] = {creds.provider: creds_data["credential"]}
 
     # Directly update the fields on the original creds object instead of creating a new one

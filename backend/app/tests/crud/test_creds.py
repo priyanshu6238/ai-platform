@@ -104,6 +104,58 @@ def test_update_creds_for_org(db: Session, test_credential):
     assert updated_creds.updated_at is not None  # Ensure updated_at is set
 
 
+def test_update_creds_provider_and_credential(db: Session, test_credential):
+    """Test updating both provider and credential at the same time"""
+    creds = test_credential
+    updated_creds_data = CredsUpdate(
+        provider="gemini",
+        credential={"api_key": "sk-gemini-key"}
+    )
+
+    updated_creds = update_creds_for_org(
+        session=db, org_id=creds.organization_id, creds_in=updated_creds_data
+    )
+
+    assert updated_creds is not None
+    assert updated_creds.provider == "gemini"
+    assert updated_creds.credential["gemini"]["api_key"] == "sk-gemini-key"
+    assert updated_creds.updated_at is not None
+
+
+def test_update_creds_provider_only(db: Session, test_credential):
+    """Test updating only the provider while keeping the same credential"""
+    creds = test_credential
+    original_api_key = creds.credential["openai"]["api_key"]
+    
+    updated_creds_data = CredsUpdate(provider="gemini")
+
+    updated_creds = update_creds_for_org(
+        session=db, org_id=creds.organization_id, creds_in=updated_creds_data
+    )
+
+    assert updated_creds is not None
+    assert updated_creds.provider == "gemini"
+    assert updated_creds.credential["gemini"]["api_key"] == original_api_key
+    assert updated_creds.updated_at is not None
+
+
+def test_update_creds_credential_only(db: Session, test_credential):
+    """Test updating only the credential while keeping the same provider"""
+    creds = test_credential
+    original_provider = creds.provider
+    
+    updated_creds_data = CredsUpdate(credential={"api_key": "sk-updated-key"})
+
+    updated_creds = update_creds_for_org(
+        session=db, org_id=creds.organization_id, creds_in=updated_creds_data
+    )
+
+    assert updated_creds is not None
+    assert updated_creds.provider == original_provider
+    assert updated_creds.credential["openai"]["api_key"] == "sk-updated-key"
+    assert updated_creds.updated_at is not None
+
+
 def test_remove_creds_for_org(db: Session, test_credential):
     creds = test_credential  # Using the fixture
     removed_creds = remove_creds_for_org(session=db, org_id=creds.organization_id)
