@@ -1,5 +1,6 @@
 from typing import Dict, Any, Optional
 import sqlalchemy as sa
+from sqlalchemy.ext.mutable import MutableDict
 from sqlmodel import Field, Relationship, SQLModel
 from datetime import datetime
 
@@ -12,19 +13,22 @@ class CredsBase(SQLModel):
 
 
 class CredsCreate(CredsBase):
-    credential: Dict[str, Any] = Field(default=None, sa_column=sa.Column(sa.JSON))
+    credential: Dict[str, Any] = Field(default=None, sa_column=sa.Column(MutableDict.as_mutable(sa.JSON)))
+    
 
 
 class CredsUpdate(SQLModel):
+    provider: Optional[str] = None  # Optional update field
     credential: Optional[Dict[str, Any]] = Field(
-        default=None, sa_column=sa.Column(sa.JSON)
+        default=None, sa_column=sa.Column(MutableDict.as_mutable(sa.JSON))
     )
     is_active: Optional[bool] = Field(default=None)
+    
 
 
 class Credential(CredsBase, table=True):
     id: int = Field(default=None, primary_key=True)
-    credential: Dict[str, Any] = Field(default=None, sa_column=sa.Column(sa.JSON))
+    credential: Dict[str, Any] = Field(default=None, sa_column=sa.Column(MutableDict.as_mutable(sa.JSON)))
     inserted_at: datetime = Field(
         default_factory=now,
         sa_column=sa.Column(sa.DateTime, default=datetime.utcnow),

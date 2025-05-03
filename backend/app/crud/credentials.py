@@ -7,11 +7,13 @@ from app.models import Credential, CredsCreate, CredsUpdate
 
 
 def set_creds_for_org(*, session: Session, creds_add: CredsCreate) -> Credential:
-    creds = Credential.model_validate(creds_add)
 
-    # Set the inserted_at timestamp (current UTC time)
+    creds = Credential(
+        organization_id=creds_add.organization_id,
+        is_active=creds_add.is_active,
+        credential=creds_add.credential,
+    )
     creds.inserted_at = datetime.utcnow()
-
     try:
         session.add(creds)
         session.commit()
@@ -55,17 +57,26 @@ def update_creds_for_org(
     ).first()
 
     if not creds:
-        raise ValueError(f"Credentials not found")
+        raise ValueError("Credentials not found")
 
-    # Update the credentials data with the provided values
-    creds_data = creds_in.dict(exclude_unset=True)
+    # Only update the credential field if it's provided
+    if creds_in.credential:
+        if not creds_in.provider:
+            raise ValueError("Provider must be specified to update nested credential")
+        
+        existing_creds = creds.credential or {}
+        existing_creds[creds_in.provider] = creds_in.credential
+        creds.credential = existing_creds
 
-    # Directly update the fields on the original creds object instead of creating a new one
-    for key, value in creds_data.items():
-        setattr(creds, key, value)
+    # Optionally update is_active
+    if creds_in.is_active is not None:
+        creds.is_active = creds_in.is_active
 
     # Set the updated_at timestamp (current UTC time)
     creds.updated_at = datetime.utcnow()
+    print("Updating provider:", creds_in.provider)
+    print("New data:", creds_in.credential)
+    print("Final structure:", creds.credential)
 
     try:
         # Add the updated creds to the session and flush the changes to the database
