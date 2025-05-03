@@ -55,7 +55,7 @@ class DocumentCrud:
             raise PermissionError(error)
 
         self.session.add(document)
-        self.session.commit()
+        
         self.session.refresh(document)
 
         return document
