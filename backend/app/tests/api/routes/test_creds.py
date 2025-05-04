@@ -279,7 +279,9 @@ def test_create_credential_for_new_organization(
     assert data["data"]["credential"]["gemini"]["api_key"] == "gm-test"
 
 
-def test_create_credential_organization_not_found(db: Session, superuser_token_headers: dict):
+def test_create_credential_organization_not_found(
+    db: Session, superuser_token_headers: dict
+):
     """Test creating credentials for a non-existent organization."""
     creds_data = {
         "organization_id": 999999,  # Non-existent organization ID
@@ -328,7 +330,9 @@ def test_update_credential_not_found(db: Session, superuser_token_headers: dict)
     assert "Credentials not found" in data["error"]
 
 
-def test_delete_provider_credential_not_found(db: Session, superuser_token_headers: dict):
+def test_delete_provider_credential_not_found(
+    db: Session, superuser_token_headers: dict
+):
     """Test deleting non-existent provider credentials."""
     org = Organization(name=f"Test Org {random_lower_string()}", is_active=True)
     db.add(org)
