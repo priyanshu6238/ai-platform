@@ -172,14 +172,14 @@ def test_get_key_by_org_invalid_provider(db: Session, test_credential: Credentia
     """Test getting API key with invalid provider."""
     # First remove existing credentials
     remove_creds_for_org(session=db, org_id=test_credential.organization_id)
-    
+
     # Create credentials with only gemini provider
     creds = CredsCreate(
         organization_id=test_credential.organization_id,
         credential={"gemini": {"api_key": "test-gemini-key"}},
     )
     set_creds_for_org(session=db, creds_add=creds)
-    
+
     # Try to get openai key when only gemini exists
     key = get_key_by_org(session=db, org_id=test_credential.organization_id)
     assert key is None
@@ -193,9 +193,8 @@ def test_update_creds_invalid_provider(db: Session, test_credential: Credential)
             session=db,
             org_id=test_credential.organization_id,
             creds_in=CredsUpdate(
-                provider="invalid_provider",
-                credential={"api_key": "new-key"}
-            )
+                provider="invalid_provider", credential={"api_key": "new-key"}
+            ),
         )
     assert "Unsupported provider" in str(exc_info.value)
 
@@ -207,7 +206,7 @@ def test_remove_provider_not_found(db: Session, test_credential: Credential):
         remove_provider_credential(
             session=db,
             org_id=test_credential.organization_id,
-            provider="invalid_provider"
+            provider="invalid_provider",
         )
     assert "Unsupported provider" in str(exc_info.value)
 
