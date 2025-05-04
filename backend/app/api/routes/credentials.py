@@ -29,6 +29,10 @@ def create_new_credential(*, session: SessionDep, creds_in: CredsCreate):
         )
         if not existing_creds:
             new_creds = set_creds_for_org(session=session, creds_add=creds_in)
+    except ValueError as e:
+        if "Unsupported provider" in str(e):
+            raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
@@ -98,6 +102,8 @@ def update_credential(*, session: SessionDep, org_id: int, creds_in: CredsUpdate
 
         return APIResponse.success_response(updated_creds)
     except ValueError as e:
+        if "Unsupported provider" in str(e):
+            raise HTTPException(status_code=400, detail=str(e))
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(

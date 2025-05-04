@@ -209,3 +209,71 @@ def test_delete_all_credentials(
     assert "gemini" in data["data"]["credential"]
     assert data["data"]["credential"]["openai"] == {}
     assert data["data"]["credential"]["gemini"] == {}
+
+
+def test_create_credential_invalid_provider(db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds):
+    """Test creating credentials with invalid provider."""
+    org, _ = create_organization_and_creds
+    response = client.post(
+        f"{settings.API_V1_STR}/credentials/",
+        json={
+            "organization_id": org.id,
+            "credential": {
+                "invalid_provider": {"api_key": "test-key"}
+            }
+        },
+        headers=superuser_token_headers
+    )
+    assert response.status_code == 400
+    assert "Unsupported provider" in response.json()["error"]
+
+
+def test_read_provider_credential_invalid_provider(db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds):
+    """Test reading credentials with invalid provider."""
+    org, _ = create_organization_and_creds
+    response = client.get(
+        f"{settings.API_V1_STR}/credentials/{org.id}/invalid_provider",
+        headers=superuser_token_headers
+    )
+    assert response.status_code == 400
+    assert "Unsupported provider" in response.json()["error"]
+
+
+def test_update_credential_invalid_provider(db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds):
+    """Test updating credentials with invalid provider."""
+    org, _ = create_organization_and_creds
+    # First create credentials for the organization
+    response = client.post(
+        f"{settings.API_V1_STR}/credentials/",
+        json={
+            "organization_id": org.id,
+            "credential": {
+                "openai": {"api_key": "test-key"}
+            }
+        },
+        headers=superuser_token_headers
+    )
+    assert response.status_code == 200
+
+    # Now try to update with invalid provider
+    response = client.patch(
+        f"{settings.API_V1_STR}/credentials/{org.id}",
+        json={
+            "provider": "invalid_provider",
+            "credential": {"api_key": "new-key"}
+        },
+        headers=superuser_token_headers
+    )
+    assert response.status_code == 400
+    assert "Unsupported provider" in response.json()["error"]
+
+
+def test_delete_provider_credential_invalid_provider(db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds):
+    """Test deleting credentials with invalid provider."""
+    org, _ = create_organization_and_creds
+    response = client.delete(
+        f"{settings.API_V1_STR}/credentials/{org.id}/invalid_provider",
+        headers=superuser_token_headers
+    )
+    assert response.status_code == 400
+    assert "Unsupported provider" in response.json()["error"]
