@@ -17,10 +17,11 @@ class CredsCreate(CredsBase):
     The credential field should be a dictionary mapping provider names to their credentials.
     Example: {"openai": {"api_key": "..."}, "gemini": {"api_key": "..."}}
     """
+
     credential: Dict[str, Any] = Field(
         default=None,
         sa_column=sa.Column(MutableDict.as_mutable(sa.JSON)),
-        description="Dictionary mapping provider names to their credentials"
+        description="Dictionary mapping provider names to their credentials",
     )
 
 
@@ -28,18 +29,17 @@ class CredsUpdate(SQLModel):
     """Update credentials for an organization.
     Can update a specific provider's credentials or add a new provider.
     """
+
     provider: Optional[str] = Field(
-        default=None,
-        description="Name of the provider to update/add credentials for"
+        default=None, description="Name of the provider to update/add credentials for"
     )
     credential: Optional[Dict[str, Any]] = Field(
         default=None,
         sa_column=sa.Column(MutableDict.as_mutable(sa.JSON)),
-        description="Credentials for the specified provider"
+        description="Credentials for the specified provider",
     )
     is_active: Optional[bool] = Field(
-        default=None,
-        description="Whether the credentials are active"
+        default=None, description="Whether the credentials are active"
     )
 
 
@@ -48,7 +48,7 @@ class Credential(CredsBase, table=True):
     credential: Dict[str, Any] = Field(
         default=None,
         sa_column=sa.Column(MutableDict.as_mutable(sa.JSON)),
-        description="Dictionary mapping provider names to their credentials"
+        description="Dictionary mapping provider names to their credentials",
     )
     inserted_at: datetime = Field(
         default_factory=now,
@@ -67,6 +67,7 @@ class Credential(CredsBase, table=True):
 
 class CredsPublic(CredsBase):
     """Public representation of credentials, excluding sensitive information."""
+
     id: int
     credential: Dict[str, Any]
     inserted_at: datetime

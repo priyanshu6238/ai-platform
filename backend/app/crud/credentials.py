@@ -4,7 +4,11 @@ from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 
 from app.models import Credential, CredsCreate, CredsUpdate
-from app.core.providers import validate_provider, validate_provider_credentials, get_supported_providers
+from app.core.providers import (
+    validate_provider,
+    validate_provider_credentials,
+    get_supported_providers,
+)
 
 
 def set_creds_for_org(*, session: Session, creds_add: CredsCreate) -> Credential:
@@ -47,17 +51,20 @@ def get_key_by_org(*, session: Session, org_id: int) -> Optional[str]:
 
     return None
 
+
 def get_creds_by_org(*, session: Session, org_id: int) -> Optional[Credential]:
     """Fetches all credentials for the given organization."""
     statement = select(Credential).where(Credential.organization_id == org_id)
     return session.exec(statement).first()
 
 
-def get_provider_credential(*, session: Session, org_id: int, provider: str) -> Optional[Dict[str, Any]]:
+def get_provider_credential(
+    *, session: Session, org_id: int, provider: str
+) -> Optional[Dict[str, Any]]:
     """Fetches credentials for a specific provider of an organization."""
     # Validate provider name
     validate_provider(provider)
-    
+
     creds = get_creds_by_org(session=session, org_id=org_id)
     if not creds or not creds.credential:
         return None
@@ -91,11 +98,11 @@ def update_creds_for_org(
     if creds_in.credential:
         if not creds_in.provider:
             raise ValueError("Provider must be specified to update nested credential")
-        
+
         # Validate provider and credentials
         validate_provider(creds_in.provider)
         validate_provider_credentials(creds_in.provider, creds_in.credential)
-        
+
         # Update or add the provider's credentials
         creds.credential[creds_in.provider] = creds_in.credential
 
@@ -123,7 +130,7 @@ def remove_provider_credential(
     """Remove credentials for a specific provider while keeping others intact."""
     # Validate provider name
     validate_provider(provider)
-    
+
     creds = session.exec(
         select(Credential).where(Credential.organization_id == org_id)
     ).first()
@@ -152,8 +159,7 @@ def remove_provider_credential(
 def remove_creds_for_org(*, session: Session, org_id: int) -> Optional[Credential]:
     """Removes (soft deletes) all credentials for the given organization while preserving provider structure."""
     statement = select(Credential).where(
-        Credential.organization_id == org_id,
-        Credential.is_active == True
+        Credential.organization_id == org_id, Credential.is_active == True
     )
     creds = session.exec(statement).first()
 

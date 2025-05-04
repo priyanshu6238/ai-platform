@@ -124,11 +124,11 @@ def delete_provider_credential(*, session: SessionDep, org_id: int, provider: st
         )
 
     if updated_creds is None:
-        raise HTTPException(
-            status_code=404, detail="Provider credentials not found"
-        )
+        raise HTTPException(status_code=404, detail="Provider credentials not found")
 
-    return APIResponse.success_response({"message": "Provider credentials removed successfully"})
+    return APIResponse.success_response(
+        {"message": "Provider credentials removed successfully"}
+    )
 
 
 @router.delete(
