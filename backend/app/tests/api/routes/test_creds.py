@@ -277,3 +277,82 @@ def test_create_credential_for_new_organization(
     assert data["data"]["organization_id"] == org.id
     assert data["data"]["credential"]["openai"]["api_key"] == "sk-test"
     assert data["data"]["credential"]["gemini"]["api_key"] == "gm-test"
+
+
+def test_create_credential_organization_not_found(db: Session, superuser_token_headers: dict):
+    """Test creating credentials for a non-existent organization."""
+    creds_data = {
+        "organization_id": 999999,  # Non-existent organization ID
+        "is_active": True,
+        "credential": {"openai": {"api_key": "sk-" + generate_random_string(10)}},
+    }
+
+    response = client.post(
+        f"{settings.API_V1_STR}/credentials/",
+        json=creds_data,
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["success"] is False
+    assert "Error while adding credentials" in data["error"]
+    assert "ForeignKeyViolation" in data["error"]
+
+
+def test_read_credential_not_found(db: Session, superuser_token_headers: dict):
+    """Test reading non-existent credentials."""
+    response = client.get(
+        f"{settings.API_V1_STR}/credentials/999999",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["success"] is False
+    assert "Credentials not found" in data["error"]
+
+
+def test_update_credential_not_found(db: Session, superuser_token_headers: dict):
+    """Test updating non-existent credentials."""
+    update_data = {
+        "credential": {"openai": {"api_key": "sk-" + generate_random_string(10)}}
+    }
+
+    response = client.patch(
+        f"{settings.API_V1_STR}/credentials/999999",
+        json=update_data,
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["success"] is False
+    assert "Credentials not found" in data["error"]
+
+
+def test_delete_provider_credential_not_found(db: Session, superuser_token_headers: dict):
+    """Test deleting non-existent provider credentials."""
+    org = Organization(name=f"Test Org {random_lower_string()}", is_active=True)
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+
+    # Use a valid provider name but non-existent credentials
+    response = client.delete(
+        f"{settings.API_V1_STR}/credentials/{org.id}/openai",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert data["success"] is False
+    assert "Credentials not found" in data["error"]
+
+
+def test_delete_all_credentials_not_found(db: Session, superuser_token_headers: dict):
+    """Test deleting non-existent credentials."""
+    response = client.delete(
+        f"{settings.API_V1_STR}/credentials/999999",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["success"] is False
+    assert "Credentials for organization not found" in data["error"]
