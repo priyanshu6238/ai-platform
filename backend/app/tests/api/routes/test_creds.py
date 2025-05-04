@@ -7,7 +7,13 @@ import string
 from app.main import app
 from app.api.deps import get_db
 from app.crud.credentials import set_creds_for_org, get_creds_by_org
-from app.models import CredsCreate, CredsUpdate, Organization, OrganizationCreate, Credential
+from app.models import (
+    CredsCreate,
+    CredsUpdate,
+    Organization,
+    OrganizationCreate,
+    Credential,
+)
 from app.core.config import settings
 from app.tests.utils.utils import random_lower_string
 
@@ -38,7 +44,9 @@ def create_organization_and_creds(db: Session):
     return org, creds_data
 
 
-def test_create_credentials(db: Session, superuser_token_headers: dict, create_organization_and_creds):
+def test_create_credentials(
+    db: Session, superuser_token_headers: dict, create_organization_and_creds
+):
     org, creds_data = create_organization_and_creds
 
     response = client.post(
@@ -53,7 +61,9 @@ def test_create_credentials(db: Session, superuser_token_headers: dict, create_o
     assert set(data["data"]["credential"].keys()) == {"openai", "gemini"}
 
 
-def test_read_all_credentials(db: Session, superuser_token_headers: dict, create_organization_and_creds):
+def test_read_all_credentials(
+    db: Session, superuser_token_headers: dict, create_organization_and_creds
+):
     org, creds_data = create_organization_and_creds
     set_creds_for_org(session=db, creds_add=creds_data)
 
@@ -69,7 +79,9 @@ def test_read_all_credentials(db: Session, superuser_token_headers: dict, create
     assert "gemini" in data["data"]["credential"]
 
 
-def test_read_single_provider_credentials(db: Session, superuser_token_headers: dict, create_organization_and_creds):
+def test_read_single_provider_credentials(
+    db: Session, superuser_token_headers: dict, create_organization_and_creds
+):
     org, creds_data = create_organization_and_creds
     set_creds_for_org(session=db, creds_add=creds_data)
 
@@ -115,11 +127,15 @@ def test_read_provider_invalid_or_not_found(db: Session, superuser_token_headers
     assert "Provider credentials not found" in response.json()["error"]
 
 
-def test_update_provider_credentials(db: Session, superuser_token_headers: dict, create_organization_and_creds):
+def test_update_provider_credentials(
+    db: Session, superuser_token_headers: dict, create_organization_and_creds
+):
     org, creds_data = create_organization_and_creds
     set_creds_for_org(session=db, creds_add=creds_data)
 
-    update_payload = CredsUpdate(provider="openai", credential={"api_key": "sk-updated"})
+    update_payload = CredsUpdate(
+        provider="openai", credential={"api_key": "sk-updated"}
+    )
 
     response = client.patch(
         f"{settings.API_V1_STR}/credentials/{org.id}",
@@ -134,7 +150,9 @@ def test_update_provider_credentials(db: Session, superuser_token_headers: dict,
     assert "gemini" in data["data"]["credential"]
 
 
-def test_update_invalid_provider(db: Session, superuser_token_headers: dict, create_organization_and_creds):
+def test_update_invalid_provider(
+    db: Session, superuser_token_headers: dict, create_organization_and_creds
+):
     org, _ = create_organization_and_creds
 
     # Create OpenAI only
@@ -155,7 +173,9 @@ def test_update_invalid_provider(db: Session, superuser_token_headers: dict, cre
     assert "Unsupported provider" in response.json()["error"]
 
 
-def test_delete_single_provider(db: Session, superuser_token_headers: dict, create_organization_and_creds):
+def test_delete_single_provider(
+    db: Session, superuser_token_headers: dict, create_organization_and_creds
+):
     org, creds_data = create_organization_and_creds
     set_creds_for_org(session=db, creds_add=creds_data)
 
@@ -164,14 +184,19 @@ def test_delete_single_provider(db: Session, superuser_token_headers: dict, crea
         headers=superuser_token_headers,
     )
     assert response.status_code == 200
-    assert response.json()["data"]["message"] == "Provider credentials removed successfully"
+    assert (
+        response.json()["data"]["message"]
+        == "Provider credentials removed successfully"
+    )
 
     updated_creds = get_creds_by_org(session=db, org_id=org.id)
     assert "openai" not in updated_creds.credential
     assert "gemini" in updated_creds.credential
 
 
-def test_delete_invalid_provider(db: Session, superuser_token_headers: dict, create_organization_and_creds):
+def test_delete_invalid_provider(
+    db: Session, superuser_token_headers: dict, create_organization_and_creds
+):
     org, _ = create_organization_and_creds
     response = client.delete(
         f"{settings.API_V1_STR}/credentials/{org.id}/invalid_provider",
@@ -181,7 +206,9 @@ def test_delete_invalid_provider(db: Session, superuser_token_headers: dict, cre
     assert "Unsupported provider" in response.json()["error"]
 
 
-def test_delete_all_credentials(db: Session, superuser_token_headers: dict, create_organization_and_creds):
+def test_delete_all_credentials(
+    db: Session, superuser_token_headers: dict, create_organization_and_creds
+):
     org, creds_data = create_organization_and_creds
     set_creds_for_org(session=db, creds_add=creds_data)
 
@@ -205,18 +232,25 @@ def test_delete_all_credentials(db: Session, superuser_token_headers: dict, crea
     assert data["data"]["credential"]["gemini"] == {}
 
 
-def test_create_credential_with_invalid_provider(db: Session, superuser_token_headers: dict, create_organization_and_creds):
+def test_create_credential_with_invalid_provider(
+    db: Session, superuser_token_headers: dict, create_organization_and_creds
+):
     org, _ = create_organization_and_creds
     response = client.post(
         f"{settings.API_V1_STR}/credentials/",
-        json={"organization_id": org.id, "credential": {"invalid_provider": {"api_key": "bad"}}},
+        json={
+            "organization_id": org.id,
+            "credential": {"invalid_provider": {"api_key": "bad"}},
+        },
         headers=superuser_token_headers,
     )
     assert response.status_code == 400
     assert "Unsupported provider" in response.json()["error"]
 
 
-def test_create_credential_for_new_organization(db: Session, superuser_token_headers: dict):
+def test_create_credential_for_new_organization(
+    db: Session, superuser_token_headers: dict
+):
     org = Organization(name=f"Test Org {random_lower_string()}", is_active=True)
     db.add(org)
     db.commit()

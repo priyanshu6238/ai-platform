@@ -25,6 +25,7 @@ from app.utils import APIResponse
 
 client = TestClient(app)
 
+
 # Helper function to generate random API key
 def generate_random_string(length=10):
     return "".join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -76,7 +77,9 @@ def test_update_creds_for_org_add_provider(db: Session, test_credential):
         provider="gemini",
         credential={"api_key": "gm-" + generate_random_string(12)},
     )
-    updated = update_creds_for_org(session=db, org_id=test_credential.organization_id, creds_in=update)
+    updated = update_creds_for_org(
+        session=db, org_id=test_credential.organization_id, creds_in=update
+    )
 
     assert updated is not None
     assert "gemini" in updated.credential
@@ -90,7 +93,9 @@ def test_update_creds_for_org_replace_provider(db: Session, test_credential):
         provider="openai",
         credential={"api_key": new_key},
     )
-    updated = update_creds_for_org(session=db, org_id=test_credential.organization_id, creds_in=update)
+    updated = update_creds_for_org(
+        session=db, org_id=test_credential.organization_id, creds_in=update
+    )
 
     assert updated is not None
     assert updated.credential["openai"]["api_key"] == new_key
