@@ -13,22 +13,43 @@ class CredsBase(SQLModel):
 
 
 class CredsCreate(CredsBase):
-    credential: Dict[str, Any] = Field(default=None, sa_column=sa.Column(MutableDict.as_mutable(sa.JSON)))
-    
+    """Create new credentials for an organization.
+    The credential field should be a dictionary mapping provider names to their credentials.
+    Example: {"openai": {"api_key": "..."}, "gemini": {"api_key": "..."}}
+    """
+    credential: Dict[str, Any] = Field(
+        default=None,
+        sa_column=sa.Column(MutableDict.as_mutable(sa.JSON)),
+        description="Dictionary mapping provider names to their credentials"
+    )
 
 
 class CredsUpdate(SQLModel):
-    provider: Optional[str] = None  # Optional update field
-    credential: Optional[Dict[str, Any]] = Field(
-        default=None, sa_column=sa.Column(MutableDict.as_mutable(sa.JSON))
+    """Update credentials for an organization.
+    Can update a specific provider's credentials or add a new provider.
+    """
+    provider: Optional[str] = Field(
+        default=None,
+        description="Name of the provider to update/add credentials for"
     )
-    is_active: Optional[bool] = Field(default=None)
-    
+    credential: Optional[Dict[str, Any]] = Field(
+        default=None,
+        sa_column=sa.Column(MutableDict.as_mutable(sa.JSON)),
+        description="Credentials for the specified provider"
+    )
+    is_active: Optional[bool] = Field(
+        default=None,
+        description="Whether the credentials are active"
+    )
 
 
 class Credential(CredsBase, table=True):
     id: int = Field(default=None, primary_key=True)
-    credential: Dict[str, Any] = Field(default=None, sa_column=sa.Column(MutableDict.as_mutable(sa.JSON)))
+    credential: Dict[str, Any] = Field(
+        default=None,
+        sa_column=sa.Column(MutableDict.as_mutable(sa.JSON)),
+        description="Dictionary mapping provider names to their credentials"
+    )
     inserted_at: datetime = Field(
         default_factory=now,
         sa_column=sa.Column(sa.DateTime, default=datetime.utcnow),
@@ -45,6 +66,7 @@ class Credential(CredsBase, table=True):
 
 
 class CredsPublic(CredsBase):
+    """Public representation of credentials, excluding sensitive information."""
     id: int
     credential: Dict[str, Any]
     inserted_at: datetime

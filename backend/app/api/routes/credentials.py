@@ -2,14 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.api.deps import SessionDep, get_current_active_superuser
 from app.crud.credentials import (
     get_creds_by_org,
-    get_key_by_org,
+    get_provider_credential,
     remove_creds_for_org,
     set_creds_for_org,
     update_creds_for_org,
+    remove_provider_credential,
 )
 from app.models import CredsCreate, CredsPublic, CredsUpdate
 from app.utils import APIResponse
 from datetime import datetime
+from app.core.providers import validate_provider
 
 router = APIRouter(prefix="/credentials", tags=["credentials"])
 
@@ -58,22 +60,27 @@ def read_credential(*, session: SessionDep, org_id: int):
 
 
 @router.get(
-    "/{org_id}/api-key",
+    "/{org_id}/{provider}",
     dependencies=[Depends(get_current_active_superuser)],
     response_model=APIResponse[dict],
 )
-def read_api_key(*, session: SessionDep, org_id: int):
+def read_provider_credential(*, session: SessionDep, org_id: int, provider: str):
     try:
-        api_key = get_key_by_org(session=session, org_id=org_id)
+        provider_enum = validate_provider(provider)
+        provider_creds = get_provider_credential(
+            session=session, org_id=org_id, provider=provider_enum
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
         )
 
-    if api_key is None:
-        raise HTTPException(status_code=404, detail="API key not found")
+    if provider_creds is None:
+        raise HTTPException(status_code=404, detail="Provider credentials not found")
 
-    return APIResponse.success_response({"api_key": api_key})
+    return APIResponse.success_response(provider_creds)
 
 
 @router.patch(
@@ -98,18 +105,38 @@ def update_credential(*, session: SessionDep, org_id: int, creds_in: CredsUpdate
         )
 
 
-from fastapi import HTTPException, Depends
-from app.crud.credentials import remove_creds_for_org
-from app.utils import APIResponse
-from app.api.deps import SessionDep, get_current_active_superuser
-
-
 @router.delete(
-    "/{org_id}/api-key",
+    "/{org_id}/{provider}",
     dependencies=[Depends(get_current_active_superuser)],
     response_model=APIResponse[dict],
 )
-def delete_credential(*, session: SessionDep, org_id: int):
+def delete_provider_credential(*, session: SessionDep, org_id: int, provider: str):
+    try:
+        provider_enum = validate_provider(provider)
+        updated_creds = remove_provider_credential(
+            session=session, org_id=org_id, provider=provider_enum
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"An unexpected error occurred: {str(e)}"
+        )
+
+    if updated_creds is None:
+        raise HTTPException(
+            status_code=404, detail="Provider credentials not found"
+        )
+
+    return APIResponse.success_response({"message": "Provider credentials removed successfully"})
+
+
+@router.delete(
+    "/{org_id}",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=APIResponse[dict],
+)
+def delete_all_credentials(*, session: SessionDep, org_id: int):
     try:
         creds = remove_creds_for_org(session=session, org_id=org_id)
     except Exception as e:
@@ -122,6 +149,4 @@ def delete_credential(*, session: SessionDep, org_id: int):
             status_code=404, detail="Credentials for organization not found"
         )
 
-    # No need to manually set deleted_at and is_active if it's done in remove_creds_for_org
-    # Simply return the success response
     return APIResponse.success_response({"message": "Credentials deleted successfully"})
