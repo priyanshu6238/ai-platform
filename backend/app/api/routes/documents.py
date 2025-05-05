@@ -17,7 +17,17 @@ from app.crud.rag import OpenAIAssistantCrud
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
-@router.get("/ls", response_model=APIResponse[List[Document]])
+def raise_from_unknown(error: Exception):
+    warnings.warn(
+        'Unexpected exception "{}": {}'.format(
+            type(error).__name__,
+            error,
+        )
+    )
+    raise HTTPException(status_code=500, detail=str(error))
+
+
+@router.get("/ls", response_model=APIResponse[List[Document]],include_in_schema=False)
 def list_docs(
     session: SessionDep,
     current_user: CurrentUser,
@@ -35,7 +45,7 @@ def list_docs(
     return APIResponse.success_response(data)
 
 
-@router.post("/cp", response_model=APIResponse[Document])
+@router.post("/cp", response_model=APIResponse[Document],include_in_schema=False)
 def upload_doc(
     session: SessionDep,
     current_user: CurrentUser,
@@ -67,10 +77,7 @@ def upload_doc(
     return APIResponse.success_response(data)
 
 
-@router.get(
-    "/rm/{doc_id}",
-    response_model=APIResponse[Document],
-)
+@router.get("/rm/{doc_id}", response_model=APIResponse[Document],include_in_schema=False)
 def delete_doc(
     session: SessionDep,
     current_user: CurrentUser,
