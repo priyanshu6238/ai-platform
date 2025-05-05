@@ -21,7 +21,7 @@ router = APIRouter(prefix="/credentials", tags=["credentials"])
     dependencies=[Depends(get_current_active_superuser)],
     response_model=APIResponse[CredsPublic],
     summary="Create new credentials for an organization",
-    description="Creates new credentials for a specific organization. This endpoint requires superuser privileges. If credentials already exist for the organization, it will return an error."
+    description="Creates new credentials for a specific organization. This endpoint requires superuser privileges. If credentials already exist for the organization, it will return an error.",
 )
 def create_new_credential(*, session: SessionDep, creds_in: CredsCreate):
     new_creds = None
@@ -51,7 +51,7 @@ def create_new_credential(*, session: SessionDep, creds_in: CredsCreate):
     dependencies=[Depends(get_current_active_superuser)],
     response_model=APIResponse[CredsPublic],
     summary="Get all credentials for an organization",
-    description="Retrieves all provider credentials associated with a specific organization. This endpoint requires superuser privileges."
+    description="Retrieves all provider credentials associated with a specific organization. This endpoint requires superuser privileges.",
 )
 def read_credential(*, session: SessionDep, org_id: int):
     try:
@@ -72,7 +72,7 @@ def read_credential(*, session: SessionDep, org_id: int):
     dependencies=[Depends(get_current_active_superuser)],
     response_model=APIResponse[dict],
     summary="Get specific provider credentials",
-    description="Retrieves credentials for a specific provider (e.g., 'openai', 'anthropic') for a given organization. This endpoint requires superuser privileges."
+    description="Retrieves credentials for a specific provider (e.g., 'openai', 'anthropic') for a given organization. This endpoint requires superuser privileges.",
 )
 def read_provider_credential(*, session: SessionDep, org_id: int, provider: str):
     try:
@@ -98,7 +98,7 @@ def read_provider_credential(*, session: SessionDep, org_id: int, provider: str)
     dependencies=[Depends(get_current_active_superuser)],
     response_model=APIResponse[CredsPublic],
     summary="Update organization credentials",
-    description="Updates credentials for a specific organization. Can update specific provider credentials or add new providers. This endpoint requires superuser privileges."
+    description="Updates credentials for a specific organization. Can update specific provider credentials or add new providers. This endpoint requires superuser privileges.",
 )
 def update_credential(*, session: SessionDep, org_id: int, creds_in: CredsUpdate):
     try:
@@ -124,7 +124,7 @@ def update_credential(*, session: SessionDep, org_id: int, creds_in: CredsUpdate
     dependencies=[Depends(get_current_active_superuser)],
     response_model=APIResponse[dict],
     summary="Delete specific provider credentials",
-    description="Removes credentials for a specific provider while keeping other provider credentials intact. This endpoint requires superuser privileges."
+    description="Removes credentials for a specific provider while keeping other provider credentials intact. This endpoint requires superuser privileges.",
 )
 def delete_provider_credential(*, session: SessionDep, org_id: int, provider: str):
     try:
@@ -152,7 +152,7 @@ def delete_provider_credential(*, session: SessionDep, org_id: int, provider: st
     dependencies=[Depends(get_current_active_superuser)],
     response_model=APIResponse[dict],
     summary="Delete all organization credentials",
-    description="Removes all credentials for a specific organization. This is a soft delete operation that marks credentials as inactive. This endpoint requires superuser privileges."
+    description="Removes all credentials for a specific organization. This is a soft delete operation that marks credentials as inactive. This endpoint requires superuser privileges.",
 )
 def delete_all_credentials(*, session: SessionDep, org_id: int):
     try:
