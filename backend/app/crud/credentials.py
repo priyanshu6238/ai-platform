@@ -35,19 +35,29 @@ def set_creds_for_org(*, session: Session, creds_add: CredsCreate) -> Credential
     return creds
 
 
-def get_key_by_org(*, session: Session, org_id: int) -> Optional[str]:
-    """Fetches the API key from the credentials for the given organization."""
+def get_key_by_org(*, session: Session, org_id: int, provider: str = "openai") -> Optional[str]:
+    """
+    Fetches the API key from the credentials for the given organization and provider.
+    
+    Args:
+        session: Database session
+        org_id: Organization ID
+        provider: Provider name (defaults to 'openai')
+        
+    Returns:
+        Optional[str]: API key if found, None otherwise
+    """
     statement = select(Credential).where(Credential.organization_id == org_id)
     creds = session.exec(statement).first()
 
-    # Check if creds exists and if the credential field contains the api_key
+    # Check if creds exists and if the credential field contains the api_key for the specified provider
     if (
         creds
         and creds.credential
-        and "openai" in creds.credential
-        and "api_key" in creds.credential["openai"]
+        and provider in creds.credential
+        and "api_key" in creds.credential[provider]
     ):
-        return creds.credential["openai"]["api_key"]
+        return creds.credential[provider]["api_key"]
 
     return None
 
