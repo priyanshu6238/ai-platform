@@ -35,15 +35,17 @@ def set_creds_for_org(*, session: Session, creds_add: CredsCreate) -> Credential
     return creds
 
 
-def get_key_by_org(*, session: Session, org_id: int, provider: str = "openai") -> Optional[str]:
+def get_key_by_org(
+    *, session: Session, org_id: int, provider: str = "openai"
+) -> Optional[str]:
     """
     Fetches the API key from the credentials for the given organization and provider.
-    
+
     Args:
         session: Database session
         org_id: Organization ID
         provider: Provider name (defaults to 'openai')
-        
+
     Returns:
         Optional[str]: API key if found, None otherwise
     """
