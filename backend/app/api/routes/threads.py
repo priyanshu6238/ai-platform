@@ -173,11 +173,13 @@ async def threads(
         .first()
     )
 
-    if not credential or not credential.credential.get("api_key"):
-        return APIResponse.failure_response(error="OpenAI API key not found for organization.")
-    
+    if not credential or not credential.credential.get("openai", {}).get("api_key"):
+        return APIResponse.failure_response(
+            error="OpenAI API key not found for organization."
+        )
+
     # Initialize OpenAI client with the fetched API key
-    client = OpenAI(api_key=credential.credential["api_key"])
+    client = OpenAI(api_key=credential.credential["openai"]["api_key"])
 
     """Asynchronous endpoint that processes requests in background."""
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -225,11 +227,13 @@ async def threads_sync(
         .first()
     )
 
-    if not credential or not credential.credential.get("api_key"):
-        return APIResponse.failure_response(error="OpenAI API key not found for organization.")
-    
+    if not credential or not credential.credential.get("openai", {}).get("api_key"):
+        return APIResponse.failure_response(
+            error="OpenAI API key not found for organization."
+        )
+
     # Initialize OpenAI client with the fetched API key
-    client = OpenAI(api_key=credential.credential["api_key"])
+    client = OpenAI(api_key=credential.credential["openai"]["api_key"])
 
     # Validate thread
     is_valid, error_message = validate_thread(client, request.get("thread_id"))

@@ -2,7 +2,7 @@ import uuid
 import json
 from pathlib import Path
 from sqlmodel import Session, select, delete
-from app.models import Organization, Project, User, APIKey
+from app.models import Organization, Project, User, APIKey, Credential
 from app.core.security import get_password_hash, encrypt_api_key
 from app.core.db import engine
 import logging
@@ -139,6 +139,26 @@ def create_api_key(session: Session, api_key_data_raw: dict) -> APIKey:
         raise
 
 
+def create_credential(session: Session, org_id: int) -> Credential:
+    """Create default credentials for an organization."""
+    try:
+        logging.info(f"Creating default credentials for organization {org_id}")
+        credential = Credential(
+            organization_id=org_id,
+            is_active=True,
+            credential={
+                "openai": {
+                    "api_key": "your-default-openai-key"  # Replace with actual default key if needed
+                }
+            },
+        )
+        session.add(credential)
+        return credential
+    except Exception as e:
+        logging.error(f"Error creating credentials: {e}")
+        raise
+
+
 def clear_database(session: Session) -> None:
     """Clear all seeded data from the database."""
     logging.info("Clearing existing data...")
@@ -168,6 +188,11 @@ def seed_database(session: Session) -> None:
             organizations.append(organization)
             logging.info(
                 f"Created organization: {organization.name} (ID: {organization.id})"
+            )
+            # Create default credentials for each organization
+            credential = create_credential(session, organization.id)
+            logging.info(
+                f"Created default credentials for organization {organization.id}"
             )
 
         # Create users
