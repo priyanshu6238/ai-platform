@@ -4,6 +4,7 @@ import string
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 from sqlalchemy.exc import IntegrityError
+from unittest.mock import patch
 
 from app.models import Credential, CredsCreate, CredsUpdate, Organization
 from app.crud.credentials import (
@@ -128,24 +129,32 @@ def test_update_creds_for_org_not_found(db: Session):
 
 
 def test_update_creds_for_org_integrity_error(db: Session, test_credential):
-    # Create a new organization to get its ID
-    new_org = Organization(name="New_Org_" + generate_random_string(), is_active=True)
-    db.add(new_org)
-    db.commit()
-    db.refresh(new_org)
+    """Test update_creds_for_org when an integrity error occurs during update."""
+    # Mock the session to raise IntegrityError when committing
+    with patch.object(db, 'commit', side_effect=IntegrityError(None, None, None)):
+        with pytest.raises(ValueError) as exc:
+            update_creds_for_org(
+                session=db,
+                org_id=test_credential.organization_id,
+                creds_in=CredsUpdate(
+                    provider="openai",
+                    credential={"api_key": "sk-test"}
+                )
+            )
+        assert "Error while updating credentials" in str(exc.value)
 
-    # Delete the organization to make its ID invalid
-    db.delete(new_org)
-    db.commit()
 
-    # Try to update with invalid data
+def test_update_creds_for_org_missing_provider(db: Session, test_credential):
+    """Test update_creds_for_org when provider is not specified for nested credentials."""
     with pytest.raises(ValueError) as exc:
         update_creds_for_org(
             session=db,
-            org_id=new_org.id,  # Use the invalid org ID directly
-            creds_in=CredsUpdate(provider="openai", credential={"api_key": "sk-test"}),
+            org_id=test_credential.organization_id,
+            creds_in=CredsUpdate(
+                credential={"api_key": "sk-test"}  # Missing provider
+            )
         )
-    assert "Credentials not found" in str(exc.value)
+    assert "Provider must be specified to update nested credential" in str(exc.value)
 
 
 def test_remove_creds_for_org_success(db: Session, test_credential):
@@ -172,31 +181,12 @@ def test_remove_creds_for_org_not_found(db: Session):
 
 
 def test_remove_creds_for_org_integrity_error(db: Session, test_credential):
-    # First remove the credentials
-    removed_creds = remove_creds_for_org(
-        session=db, org_id=test_credential.organization_id
-    )
-    assert removed_creds is not None
-    assert removed_creds.is_active is False
-
-    # Create a new organization to get its ID
-    new_org = Organization(name="New_Org_" + generate_random_string(), is_active=True)
-    db.add(new_org)
-    db.commit()
-    db.refresh(new_org)
-
-    # Delete the organization to make its ID invalid
-    db.delete(new_org)
-    db.commit()
-
-    # Try to update with invalid data
-    with pytest.raises(ValueError) as exc:
-        update_creds_for_org(
-            session=db,
-            org_id=new_org.id,  # Use the invalid org ID directly
-            creds_in=CredsUpdate(provider="openai", credential={"api_key": "sk-test"}),
-        )
-    assert "Credentials not found" in str(exc.value)
+    """Test remove_creds_for_org when an integrity error occurs during deletion."""
+    # Mock the session to raise IntegrityError when committing
+    with patch.object(db, 'commit', side_effect=IntegrityError(None, None, None)):
+        with pytest.raises(ValueError) as exc:
+            remove_creds_for_org(session=db, org_id=test_credential.organization_id)
+        assert "Error while deleting credentials" in str(exc.value)
 
 
 def test_get_provider_credential_success(db: Session, test_credential):
@@ -256,3 +246,59 @@ def test_remove_provider_credential_org_not_found(db: Session):
     with pytest.raises(ValueError) as exc:
         remove_provider_credential(session=db, org_id=99999, provider="openai")
     assert "not found" in str(exc.value)
+
+
+def test_remove_provider_credential_integrity_error(db: Session, test_credential):
+    """Test remove_provider_credential when an integrity error occurs during removal."""
+    # Mock the session to raise IntegrityError when committing
+    with patch.object(db, 'commit', side_effect=IntegrityError(None, None, None)):
+        with pytest.raises(ValueError) as exc:
+            remove_provider_credential(
+                session=db,
+                org_id=test_credential.organization_id,
+                provider="openai"
+            )
+        assert "Error while removing provider credentials" in str(exc.value)
+
+
+def test_set_creds_for_org_integrity_error(db: Session, test_org):
+    """Test set_creds_for_org when an integrity error occurs during creation."""
+    # Mock the session to raise IntegrityError when committing
+    with patch.object(db, 'commit', side_effect=IntegrityError(None, None, None)):
+        with pytest.raises(ValueError) as exc:
+            set_creds_for_org(
+                session=db,
+                creds_add=CredsCreate(
+                    organization_id=test_org.id,
+                    is_active=True,
+                    credential={"openai": {"api_key": "sk-test"}}
+                )
+            )
+        assert "Error while adding credentials" in str(exc.value)
+
+
+def test_validate_provider_credentials_missing_fields(db: Session, test_org):
+    """Test validation of provider credentials when required fields are missing."""
+    # Test with missing api_key for OpenAI
+    with pytest.raises(ValueError) as exc:
+        set_creds_for_org(
+            session=db,
+            creds_add=CredsCreate(
+                organization_id=test_org.id,
+                is_active=True,
+                credential={"openai": {}}  # Missing api_key
+            )
+        )
+    assert "Missing required fields for openai" in str(exc.value)
+
+    # Test with missing api_key for Gemini
+    with pytest.raises(ValueError) as exc:
+        set_creds_for_org(
+            session=db,
+            creds_add=CredsCreate(
+                organization_id=test_org.id,
+                is_active=True,
+                credential={"gemini": {}}  # Missing api_key
+            )
+        )
+    assert "Missing required fields for gemini" in str(exc.value)
