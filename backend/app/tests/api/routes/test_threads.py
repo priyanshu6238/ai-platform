@@ -386,3 +386,34 @@ def test_handle_openai_error_with_none_body():
     error.__str__.return_value = "None body error"
     result = handle_openai_error(error)
     assert result == "None body error"
+
+
+@patch("app.api.routes.threads.OpenAI")
+def test_process_run_failed_status(mock_openai):
+    """Test process_run when the run fails with a non-completed status."""
+    # Setup mock client
+    mock_client = MagicMock()
+    mock_openai.return_value = mock_client
+
+    # Simulate a failed run
+    mock_run = MagicMock()
+    mock_run.status = "failed"
+    mock_client.beta.threads.runs.create_and_poll.return_value = mock_run
+
+    # Create test request
+    request = {
+        "thread_id": "thread_123",
+        "assistant_id": "assistant_123",
+        "callback_url": "http://callback.url",
+    }
+
+    # Patch send_callback and invoke process_run
+    with patch("app.api.routes.threads.send_callback") as mock_send_callback:
+        process_run(request, mock_client)
+
+        # Verify that send_callback was called with the correct failure response
+        mock_send_callback.assert_called_once()
+        callback_url, payload = mock_send_callback.call_args[0]
+        assert callback_url == request["callback_url"]
+        assert "Run failed with status: failed" in payload["error"]
+        assert payload["success"] is False

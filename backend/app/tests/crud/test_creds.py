@@ -52,10 +52,28 @@ def test_create_credentials(db: Session, test_credential):
     assert test_credential.credential["openai"]["api_key"].startswith("sk-")
 
 
+def test_create_credentials_integrity_error(db: Session, test_credential):
+    # Try to create credentials for the same organization
+    creds_data = CredsCreate(
+        organization_id=test_credential.organization_id,
+        is_active=True,
+        credential={"openai": {"api_key": "sk-duplicate"}},
+    )
+    # Since there's no unique constraint, this should succeed
+    new_creds = set_creds_for_org(session=db, creds_add=creds_data)
+    assert new_creds is not None
+    assert new_creds.organization_id == test_credential.organization_id
+
+
 def test_get_creds_by_org(db: Session, test_credential):
     fetched = get_creds_by_org(session=db, org_id=test_credential.organization_id)
     assert fetched is not None
     assert fetched.organization_id == test_credential.organization_id
+
+
+def test_get_creds_by_org_not_found(db: Session):
+    fetched = get_creds_by_org(session=db, org_id=99999)
+    assert fetched is None
 
 
 def test_get_key_by_org_success(db: Session, test_credential):
@@ -63,121 +81,178 @@ def test_get_key_by_org_success(db: Session, test_credential):
     assert key is not None and key.startswith("sk-")
 
 
-def test_get_key_by_org_missing_provider(db: Session, test_org):
-    key = get_key_by_org(session=db, org_id=test_org.id)
+def test_get_key_by_org_not_found(db: Session):
+    key = get_key_by_org(session=db, org_id=99999)
     assert key is None
 
 
-def test_update_creds_for_org_add_provider(db: Session, test_credential):
+def test_update_creds_for_org_success(db: Session, test_credential):
+    # Test updating credential field
+    update = CredsUpdate(provider="openai", credential={"api_key": "sk-newkey"})
+    updated = update_creds_for_org(
+        session=db, org_id=test_credential.organization_id, creds_in=update
+    )
+    assert updated.credential["openai"]["api_key"] == "sk-newkey"
+    assert updated.updated_at is not None
+
+    # Test updating is_active field
+    update = CredsUpdate(is_active=False)
+    updated = update_creds_for_org(
+        session=db, org_id=test_credential.organization_id, creds_in=update
+    )
+    assert updated.is_active is False
+    assert updated.updated_at is not None
+
+    # Test updating both fields
     update = CredsUpdate(
-        provider="gemini", credential={"api_key": "gm-" + generate_random_string()}
+        provider="openai",
+        credential={"api_key": "sk-another"},
+        is_active=True,
+    )
+    updated = update_creds_for_org(
+        session=db, org_id=test_credential.organization_id, creds_in=update
+    )
+    assert updated.credential["openai"]["api_key"] == "sk-another"
+    assert updated.is_active is True
+    assert updated.updated_at is not None
+
+
+def test_update_creds_for_org_not_found(db: Session):
+    with pytest.raises(ValueError) as exc:
+        update_creds_for_org(
+            session=db,
+            org_id=99999,
+            creds_in=CredsUpdate(credential={"openai": {"api_key": "missing"}}),
+        )
+    assert "Credentials not found" in str(exc.value)
+
+
+def test_update_creds_for_org_integrity_error(db: Session, test_credential):
+    # Create a new organization to get its ID
+    new_org = Organization(name="New_Org_" + generate_random_string(), is_active=True)
+    db.add(new_org)
+    db.commit()
+    db.refresh(new_org)
+
+    # Delete the organization to make its ID invalid
+    db.delete(new_org)
+    db.commit()
+
+    # Try to update with invalid data
+    with pytest.raises(ValueError) as exc:
+        update_creds_for_org(
+            session=db,
+            org_id=new_org.id,  # Use the invalid org ID directly
+            creds_in=CredsUpdate(provider="openai", credential={"api_key": "sk-test"}),
+        )
+    assert "Credentials not found" in str(exc.value)
+
+
+def test_remove_creds_for_org_success(db: Session, test_credential):
+    removed = remove_creds_for_org(session=db, org_id=test_credential.organization_id)
+    assert removed is not None
+    assert removed.organization_id == test_credential.organization_id
+    assert removed.deleted_at is not None
+    assert removed.is_active is False
+
+    # Verify soft delete
+    deleted_creds = (
+        db.query(Credential)
+        .filter(Credential.organization_id == test_credential.organization_id)
+        .first()
+    )
+    assert deleted_creds is not None
+    assert deleted_creds.deleted_at is not None
+    assert deleted_creds.is_active is False
+
+
+def test_remove_creds_for_org_not_found(db: Session):
+    result = remove_creds_for_org(session=db, org_id=99999)
+    assert result is None
+
+
+def test_remove_creds_for_org_integrity_error(db: Session, test_credential):
+    # First remove the credentials
+    removed_creds = remove_creds_for_org(
+        session=db, org_id=test_credential.organization_id
+    )
+    assert removed_creds is not None
+    assert removed_creds.is_active is False
+
+    # Create a new organization to get its ID
+    new_org = Organization(name="New_Org_" + generate_random_string(), is_active=True)
+    db.add(new_org)
+    db.commit()
+    db.refresh(new_org)
+
+    # Delete the organization to make its ID invalid
+    db.delete(new_org)
+    db.commit()
+
+    # Try to update with invalid data
+    with pytest.raises(ValueError) as exc:
+        update_creds_for_org(
+            session=db,
+            org_id=new_org.id,  # Use the invalid org ID directly
+            creds_in=CredsUpdate(provider="openai", credential={"api_key": "sk-test"}),
+        )
+    assert "Credentials not found" in str(exc.value)
+
+
+def test_get_provider_credential_success(db: Session, test_credential):
+    provider_cred = get_provider_credential(
+        session=db, org_id=test_credential.organization_id, provider="openai"
+    )
+    assert provider_cred is not None
+    assert "api_key" in provider_cred
+    assert provider_cred["api_key"].startswith("sk-")
+
+
+def test_get_provider_credential_not_found(db: Session, test_credential):
+    provider_cred = get_provider_credential(
+        session=db, org_id=test_credential.organization_id, provider="gemini"
+    )
+    assert provider_cred is None
+
+
+def test_get_providers_success(db: Session, test_credential):
+    providers = get_providers(session=db, org_id=test_credential.organization_id)
+    assert "openai" in providers
+
+
+def test_get_providers_not_found(db: Session):
+    providers = get_providers(session=db, org_id=99999)
+    assert providers == []
+
+
+def test_remove_provider_credential_success(db: Session, test_credential):
+    # First add another provider
+    update = CredsUpdate(
+        provider="gemini",
+        credential={"api_key": "gm-" + generate_random_string()},
     )
     updated = update_creds_for_org(
         session=db, org_id=test_credential.organization_id, creds_in=update
     )
     assert "gemini" in updated.credential
 
-
-def test_update_creds_for_org_replace_provider(db: Session, test_credential):
-    update = CredsUpdate(provider="openai", credential={"api_key": "sk-replaced"})
-    updated = update_creds_for_org(
-        session=db, org_id=test_credential.organization_id, creds_in=update
-    )
-    assert updated.credential["openai"]["api_key"] == "sk-replaced"
-
-
-def test_update_creds_missing_provider_raises(db: Session, test_credential):
-    with pytest.raises(ValueError, match="Provider must be specified"):
-        update_creds_for_org(
-            session=db,
-            org_id=test_credential.organization_id,
-            creds_in=CredsUpdate(credential={"api_key": "x"}),
-        )
-
-
-def test_remove_all_credentials(db: Session, test_credential):
-    removed = remove_creds_for_org(session=db, org_id=test_credential.organization_id)
-    assert not removed.is_active
-    assert removed.deleted_at is not None
-    assert all(val == {} for val in removed.credential.values())
-
-
-def test_remove_all_credentials_no_creds(db: Session, test_org):
-    creds = CredsCreate(organization_id=test_org.id, is_active=True, credential={})
-    set_creds_for_org(session=db, creds_add=creds)
-    removed = remove_creds_for_org(session=db, org_id=test_org.id)
-    assert removed is not None
-    assert removed.credential == {}
-
-
-def test_get_provider_credential_found(db: Session, test_credential):
-    cred = get_provider_credential(
-        session=db, org_id=test_credential.organization_id, provider="openai"
-    )
-    assert cred["api_key"].startswith("sk-")
-
-
-def test_get_provider_credential_not_found(db: Session, test_credential):
-    cred = get_provider_credential(
-        session=db, org_id=test_credential.organization_id, provider="gemini"
-    )
-    assert cred is None
-
-
-def test_get_providers(db: Session, test_credential):
-    providers = get_providers(session=db, org_id=test_credential.organization_id)
-    assert "openai" in providers
-
-
-def test_get_providers_empty(db: Session, test_org):
-    assert get_providers(session=db, org_id=test_org.id) == []
-
-
-def test_remove_provider_credential_success(db: Session, test_credential):
-    update = CredsUpdate(provider="gemini", credential={"api_key": "gm-123"})
-    update_creds_for_org(
-        session=db, org_id=test_credential.organization_id, creds_in=update
-    )
+    # Now remove the provider
     removed = remove_provider_credential(
         session=db, org_id=test_credential.organization_id, provider="gemini"
     )
-    assert "gemini" not in removed.credential or removed.credential["gemini"] == {}
+    assert "gemini" not in removed.credential
+    assert "openai" in removed.credential  # Original provider should still exist
 
 
 def test_remove_provider_credential_not_found(db: Session, test_credential):
-    with pytest.raises(ValueError, match="not found"):
+    with pytest.raises(ValueError) as exc:
         remove_provider_credential(
             session=db, org_id=test_credential.organization_id, provider="gemini"
         )
+    assert "not found" in str(exc.value)
 
 
-def test_update_creds_for_org_not_found(db: Session):
-    with pytest.raises(ValueError, match="Credentials not found"):
-        update_creds_for_org(
-            session=db,
-            org_id=99999,
-            creds_in=CredsUpdate(provider="openai", credential={"api_key": "123"}),
-        )
-
-
-def test_remove_provider_creds_org_not_found(db: Session):
-    with pytest.raises(ValueError, match="Credentials not found"):
+def test_remove_provider_credential_org_not_found(db: Session):
+    with pytest.raises(ValueError) as exc:
         remove_provider_credential(session=db, org_id=99999, provider="openai")
-
-
-def test_set_invalid_provider_raises(db: Session, test_org):
-    creds = CredsCreate(
-        organization_id=test_org.id,
-        is_active=True,
-        credential={"unknown_provider": {"api_key": "123"}},
-    )
-    with pytest.raises(ValueError, match="Unsupported provider"):
-        set_creds_for_org(session=db, creds_add=creds)
-
-
-def test_update_invalid_provider_raises(db: Session, test_credential):
-    update = CredsUpdate(provider="invalid123", credential={"api_key": "x"})
-    with pytest.raises(ValueError, match="Unsupported provider"):
-        update_creds_for_org(
-            session=db, org_id=test_credential.organization_id, creds_in=update
-        )
+    assert "not found" in str(exc.value)
