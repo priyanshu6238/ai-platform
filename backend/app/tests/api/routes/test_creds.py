@@ -362,10 +362,12 @@ def test_delete_all_credentials_not_found(db: Session, superuser_token_headers: 
     assert "Credentials for organization not found" in data["error"]
 
 
-def test_update_credential_timestamp(db: Session, superuser_token_headers: dict, create_organization_and_creds):
+def test_update_credential_timestamp(
+    db: Session, superuser_token_headers: dict, create_organization_and_creds
+):
     """Test that updated_at timestamp is set when updating credentials."""
     org, _ = create_organization_and_creds
-    
+
     # First create initial credentials
     initial_creds = {
         "organization_id": org.id,
@@ -377,7 +379,7 @@ def test_update_credential_timestamp(db: Session, superuser_token_headers: dict,
         headers=superuser_token_headers,
     )
     assert response.status_code == 200
-    
+
     # Update the credentials
     update_data = {
         "provider": "openai",
@@ -389,7 +391,7 @@ def test_update_credential_timestamp(db: Session, superuser_token_headers: dict,
         headers=superuser_token_headers,
     )
     assert response.status_code == 200
-    
+
     # Verify that updated_at is set
     response_data = response.json()
     assert response_data["success"] is True
@@ -397,10 +399,12 @@ def test_update_credential_timestamp(db: Session, superuser_token_headers: dict,
     assert response_data["data"]["updated_at"] is not None
 
 
-def test_update_credential_unsupported_provider(db: Session, superuser_token_headers: dict, create_organization_and_creds):
+def test_update_credential_unsupported_provider(
+    db: Session, superuser_token_headers: dict, create_organization_and_creds
+):
     """Test updating credentials with an unsupported provider returns 400 status code."""
     org, _ = create_organization_and_creds
-    
+
     # First create initial credentials
     initial_creds = {
         "organization_id": org.id,
@@ -412,7 +416,7 @@ def test_update_credential_unsupported_provider(db: Session, superuser_token_hea
         headers=superuser_token_headers,
     )
     assert response.status_code == 200
-    
+
     # Try to update with an unsupported provider
     update_data = {
         "provider": "unsupported_provider",
@@ -423,7 +427,7 @@ def test_update_credential_unsupported_provider(db: Session, superuser_token_hea
         json=update_data,
         headers=superuser_token_headers,
     )
-    
+
     # Verify the response
     assert response.status_code == 400
     data = response.json()
