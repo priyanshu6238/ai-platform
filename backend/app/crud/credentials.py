@@ -9,6 +9,7 @@ from app.core.providers import (
     validate_provider_credentials,
     get_supported_providers,
 )
+from app.core.security import encrypt_api_key
 
 
 def set_creds_for_org(*, session: Session, creds_add: CredsCreate) -> Credential:
@@ -18,6 +19,9 @@ def set_creds_for_org(*, session: Session, creds_add: CredsCreate) -> Credential
         for provider, credentials in creds_add.credential.items():
             validate_provider(provider)
             validate_provider_credentials(provider, credentials)
+            # Encrypt API key if present
+            if isinstance(credentials, dict) and "api_key" in credentials:
+                credentials["api_key"] = encrypt_api_key(credentials["api_key"])
 
     creds = Credential(
         organization_id=creds_add.organization_id,
@@ -115,6 +119,10 @@ def update_creds_for_org(
         validate_provider(creds_in.provider)
         validate_provider_credentials(creds_in.provider, creds_in.credential)
 
+        # Encrypt API key if present
+        if isinstance(creds_in.credential, dict) and "api_key" in creds_in.credential:
+            creds_in.credential["api_key"] = encrypt_api_key(creds_in.credential["api_key"])
+        
         # Update or add the provider's credentials
         creds.credential[creds_in.provider] = creds_in.credential
 
