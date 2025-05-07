@@ -16,6 +16,7 @@ from app.models import (
 )
 from app.core.config import settings
 from app.tests.utils.utils import random_lower_string
+from app.core.security import encrypt_api_key, decrypt_api_key
 
 client = TestClient(app)
 
@@ -146,7 +147,11 @@ def test_update_provider_credentials(
     assert response.status_code == 200
     data = response.json()
     assert data["success"]
-    assert data["data"]["credential"]["openai"]["api_key"] == "sk-updated"
+
+    # Decrypt the API key before comparison
+    encrypted_key = data["data"]["credential"]["openai"]["api_key"]
+    decrypted_key = decrypt_api_key(encrypted_key)
+    assert decrypted_key == "sk-updated"
     assert "gemini" in data["data"]["credential"]
 
 
@@ -275,8 +280,12 @@ def test_create_credential_for_new_organization(
     data = response.json()
     assert data["success"]
     assert data["data"]["organization_id"] == org.id
-    assert data["data"]["credential"]["openai"]["api_key"] == "sk-test"
-    assert data["data"]["credential"]["gemini"]["api_key"] == "gm-test"
+
+    # Decrypt the API keys before comparison
+    openai_key = decrypt_api_key(data["data"]["credential"]["openai"]["api_key"])
+    gemini_key = decrypt_api_key(data["data"]["credential"]["gemini"]["api_key"])
+    assert openai_key == "sk-test"
+    assert gemini_key == "gm-test"
 
 
 def test_create_credential_organization_not_found(

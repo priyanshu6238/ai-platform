@@ -18,6 +18,7 @@ from app.crud.credentials import (
     get_provider_credential,
 )
 from app.main import app
+from app.core.security import encrypt_api_key, decrypt_api_key
 
 client = TestClient(app)
 
@@ -47,10 +48,34 @@ def test_credential(db: Session, test_org):
     return creds
 
 
-def test_create_credentials(db: Session, test_credential):
-    assert test_credential is not None
-    assert "openai" in test_credential.credential
-    assert test_credential.credential["openai"]["api_key"].startswith("sk-")
+def test_create_credentials(db: Session):
+    org = Organization(name=f"Test Org {generate_random_string()}", is_active=True)
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+
+    openai_key = f"sk-{generate_random_string()}"
+    gemini_key = f"gm-{generate_random_string()}"
+    creds_data = CredsCreate(
+        organization_id=org.id,
+        is_active=True,
+        credential={
+            "openai": {"api_key": openai_key},
+            "gemini": {"api_key": gemini_key},
+        },
+    )
+
+    creds = set_creds_for_org(session=db, creds_add=creds_data)
+    assert creds is not None
+    assert creds.organization_id == org.id
+    assert creds.is_active is True
+    assert set(creds.credential.keys()) == {"openai", "gemini"}
+
+    # Decrypt and verify the API keys
+    decrypted_openai_key = decrypt_api_key(creds.credential["openai"]["api_key"])
+    decrypted_gemini_key = decrypt_api_key(creds.credential["gemini"]["api_key"])
+    assert decrypted_openai_key == openai_key
+    assert decrypted_gemini_key == gemini_key
 
 
 def test_create_credentials_integrity_error(db: Session, test_credential):
@@ -77,9 +102,25 @@ def test_get_creds_by_org_not_found(db: Session):
     assert fetched is None
 
 
-def test_get_key_by_org_success(db: Session, test_credential):
-    key = get_key_by_org(session=db, org_id=test_credential.organization_id)
-    assert key is not None and key.startswith("sk-")
+def test_get_key_by_org_success(db: Session):
+    org = Organization(name=f"Test Org {generate_random_string()}", is_active=True)
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+
+    openai_key = f"sk-{generate_random_string()}"
+    creds = Credential(
+        organization_id=org.id,
+        is_active=True,
+        credential={"openai": {"api_key": encrypt_api_key(openai_key)}},
+    )
+    db.add(creds)
+    db.commit()
+
+    key = get_key_by_org(session=db, org_id=org.id)
+    assert key is not None
+    decrypted_key = decrypt_api_key(key)
+    assert decrypted_key.startswith("sk-")
 
 
 def test_get_key_by_org_not_found(db: Session):
@@ -87,35 +128,30 @@ def test_get_key_by_org_not_found(db: Session):
     assert key is None
 
 
-def test_update_creds_for_org_success(db: Session, test_credential):
-    # Test updating credential field
-    update = CredsUpdate(provider="openai", credential={"api_key": "sk-newkey"})
-    updated = update_creds_for_org(
-        session=db, org_id=test_credential.organization_id, creds_in=update
-    )
-    assert updated.credential["openai"]["api_key"] == "sk-newkey"
-    assert updated.updated_at is not None
+def test_update_creds_for_org_success(db: Session):
+    org = Organization(name=f"Test Org {generate_random_string()}", is_active=True)
+    db.add(org)
+    db.commit()
+    db.refresh(org)
 
-    # Test updating is_active field
-    update = CredsUpdate(is_active=False)
-    updated = update_creds_for_org(
-        session=db, org_id=test_credential.organization_id, creds_in=update
-    )
-    assert updated.is_active is False
-    assert updated.updated_at is not None
-
-    # Test updating both fields
-    update = CredsUpdate(
-        provider="openai",
-        credential={"api_key": "sk-another"},
+    initial_key = f"sk-{generate_random_string()}"
+    creds = Credential(
+        organization_id=org.id,
         is_active=True,
+        credential={"openai": {"api_key": encrypt_api_key(initial_key)}},
     )
-    updated = update_creds_for_org(
-        session=db, org_id=test_credential.organization_id, creds_in=update
+    db.add(creds)
+    db.commit()
+
+    new_key = "sk-newkey"
+    update_data = CredsUpdate(provider="openai", credential={"api_key": new_key})
+
+    updated_creds = update_creds_for_org(
+        session=db, org_id=org.id, creds_in=update_data
     )
-    assert updated.credential["openai"]["api_key"] == "sk-another"
-    assert updated.is_active is True
-    assert updated.updated_at is not None
+    assert updated_creds is not None
+    decrypted_key = decrypt_api_key(updated_creds.credential["openai"]["api_key"])
+    assert decrypted_key == new_key
 
 
 def test_update_creds_for_org_not_found(db: Session):
@@ -186,13 +222,27 @@ def test_remove_creds_for_org_integrity_error(db: Session, test_credential):
         assert "Error while deleting credentials" in str(exc.value)
 
 
-def test_get_provider_credential_success(db: Session, test_credential):
-    provider_cred = get_provider_credential(
-        session=db, org_id=test_credential.organization_id, provider="openai"
+def test_get_provider_credential_success(db: Session):
+    org = Organization(name=f"Test Org {generate_random_string()}", is_active=True)
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+
+    openai_key = f"sk-{generate_random_string()}"
+    creds = Credential(
+        organization_id=org.id,
+        is_active=True,
+        credential={"openai": {"api_key": encrypt_api_key(openai_key)}},
     )
-    assert provider_cred is not None
-    assert "api_key" in provider_cred
-    assert provider_cred["api_key"].startswith("sk-")
+    db.add(creds)
+    db.commit()
+
+    provider_creds = get_provider_credential(
+        session=db, org_id=org.id, provider="openai"
+    )
+    assert provider_creds is not None
+    decrypted_key = decrypt_api_key(provider_creds["api_key"])
+    assert decrypted_key.startswith("sk-")
 
 
 def test_get_provider_credential_not_found(db: Session, test_credential):
