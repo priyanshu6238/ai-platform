@@ -9,7 +9,7 @@ from langfuse.decorators import observe, langfuse_context
 
 from app.api.deps import get_current_user_org, get_db
 from app.core import logging, settings
-from app.models import UserOrganization, Credential
+from app.models import UserOrganization
 from app.utils import APIResponse
 
 logger = logging.getLogger(__name__)
@@ -166,21 +166,6 @@ async def threads(
     _session: Session = Depends(get_db),
     _current_user: UserOrganization = Depends(get_current_user_org),
 ):
-    # Fetch the OpenAI API key for the organization
-    credential = (
-        _session.query(Credential)
-        .filter_by(organization_id=_current_user.organization_id, is_active=True)
-        .first()
-    )
-
-    if not credential or not credential.credential.get("openai", {}).get("api_key"):
-        return APIResponse.failure_response(
-            error="OpenAI API key not found for organization."
-        )
-
-    # Initialize OpenAI client with the fetched API key
-    client = OpenAI(api_key=credential.credential["openai"]["api_key"])
-
     """Asynchronous endpoint that processes requests in background."""
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
     langfuse_context.configure(
@@ -220,20 +205,8 @@ async def threads_sync(
     _session: Session = Depends(get_db),
     _current_user: UserOrganization = Depends(get_current_user_org),
 ):
-    # Fetch the OpenAI API key for the organization
-    credential = (
-        _session.query(Credential)
-        .filter_by(organization_id=_current_user.organization_id, is_active=True)
-        .first()
-    )
-
-    if not credential or not credential.credential.get("openai", {}).get("api_key"):
-        return APIResponse.failure_response(
-            error="OpenAI API key not found for organization."
-        )
-
-    # Initialize OpenAI client with the fetched API key
-    client = OpenAI(api_key=credential.credential["openai"]["api_key"])
+    """Synchronous endpoint that processes requests immediately."""
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
     # Validate thread
     is_valid, error_message = validate_thread(client, request.get("thread_id"))
