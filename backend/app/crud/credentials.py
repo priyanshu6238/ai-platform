@@ -121,8 +121,10 @@ def update_creds_for_org(
 
         # Encrypt API key if present
         if isinstance(creds_in.credential, dict) and "api_key" in creds_in.credential:
-            creds_in.credential["api_key"] = encrypt_api_key(creds_in.credential["api_key"])
-        
+            creds_in.credential["api_key"] = encrypt_api_key(
+                creds_in.credential["api_key"]
+            )
+
         # Update or add the provider's credentials
         creds.credential[creds_in.provider] = creds_in.credential
 
