@@ -57,5 +57,23 @@
         "is_deleted": false,
         "deleted_at": null
       }
+    ],
+    "credentials": [
+      {
+        "organization_id": 1,
+        "provider": "openai",
+        "credential": {
+          "api_key": "sk-test-key-123"
+        },
+        "is_active": true
+      },
+      {
+        "organization_id": 1,
+        "provider": "gemini",
+        "credential": {
+          "api_key": "AI-test-key-456"
+        },
+        "is_active": true
+      }
     ]
-  }
+}

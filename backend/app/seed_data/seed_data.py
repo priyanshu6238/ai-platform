@@ -139,23 +139,24 @@ def create_api_key(session: Session, api_key_data_raw: dict) -> APIKey:
         raise
 
 
-def create_credential(session: Session, org_id: int) -> Credential:
-    """Create default credentials for an organization."""
+def create_credential(session: Session, org_id: int, provider_data: dict) -> List[Credential]:
+    """Create credentials for multiple providers associated with an organization."""
     try:
-        logging.info(f"Creating default credentials for organization {org_id}")
-        credential = Credential(
-            organization_id=org_id,
-            is_active=True,
-            credential={
-                "openai": {
-                    "api_key": "your-default-openai-key"  # Replace with actual default key if needed
-                }
-            },
-        )
-        session.add(credential)
-        return credential
+        logging.info(f"Creating credentials for organization {org_id}")
+        credentials = []
+        for provider, api_key_data in provider_data.items():
+            credential = Credential(
+                organization_id=org_id,
+                provider=provider,
+                is_active=True,
+                credential=api_key_data
+            )
+            session.add(credential)
+            credentials.append(credential)
+            logging.info(f"Created credential for provider {provider} in organization {org_id}")
+        return credentials
     except Exception as e:
-        logging.error(f"Error creating credentials: {e}")
+        logging.error(f"Error creating credentials for organization {org_id}: {e}")
         raise
 
 
@@ -166,6 +167,7 @@ def clear_database(session: Session) -> None:
     session.exec(delete(Project))
     session.exec(delete(Organization))
     session.exec(delete(User))
+    session.exec(delete(Credential))
     session.commit()
     logging.info("Existing data cleared.")
 
@@ -189,10 +191,15 @@ def seed_database(session: Session) -> None:
             logging.info(
                 f"Created organization: {organization.name} (ID: {organization.id})"
             )
-            # Create default credentials for each organization
-            credential = create_credential(session, organization.id)
+
+        # Create credentials for each organization
+        for cred_data in seed_data.get("credentials", []):
+            provider_data = {
+                cred_data["provider"]: cred_data["credential"]
+            }
+            credentials = create_credential(session, cred_data["organization_id"], provider_data)
             logging.info(
-                f"Created default credentials for organization {organization.id}"
+                f"Created credentials for organization {cred_data['organization_id']} with provider {cred_data['provider']}"
             )
 
         # Create users

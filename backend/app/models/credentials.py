@@ -30,11 +30,10 @@ class CredsUpdate(SQLModel):
     Can update a specific provider's credentials or add a new provider.
     """
 
-    provider: Optional[str] = Field(
-        default=None, description="Name of the provider to update/add credentials for"
+    provider: str = Field(
+        description="Name of the provider to update/add credentials for"
     )
-    credential: Optional[Dict[str, Any]] = Field(
-        default=None,
+    credential: Dict[str, Any] = Field(
         sa_column=sa.Column(MutableDict.as_mutable(sa.JSON)),
         description="Credentials for the specified provider",
     )
@@ -44,11 +43,17 @@ class CredsUpdate(SQLModel):
 
 
 class Credential(CredsBase, table=True):
+    """Database model for storing provider credentials.
+    Each row represents credentials for a single provider.
+    """
     id: int = Field(default=None, primary_key=True)
+    provider: str = Field(
+        index=True,
+        description="Provider name like 'openai', 'gemini'"
+    )
     credential: Dict[str, Any] = Field(
-        default=None,
         sa_column=sa.Column(MutableDict.as_mutable(sa.JSON)),
-        description="Dictionary mapping provider names to their credentials",
+        description="Provider-specific credentials (e.g., API keys)",
     )
     inserted_at: datetime = Field(
         default_factory=now,
@@ -59,7 +64,8 @@ class Credential(CredsBase, table=True):
         sa_column=sa.Column(sa.DateTime, onupdate=datetime.utcnow),
     )
     deleted_at: Optional[datetime] = Field(
-        default=None, sa_column=sa.Column(sa.DateTime, nullable=True)
+        default=None,
+        sa_column=sa.Column(sa.DateTime, nullable=True)
     )
 
     organization: Optional["Organization"] = Relationship(back_populates="creds")
@@ -69,6 +75,7 @@ class CredsPublic(CredsBase):
     """Public representation of credentials, excluding sensitive information."""
 
     id: int
+    provider: str
     credential: Dict[str, Any]
     inserted_at: datetime
     updated_at: datetime

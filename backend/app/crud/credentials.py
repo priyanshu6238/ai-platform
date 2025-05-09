@@ -12,192 +12,190 @@ from app.core.providers import (
 from app.core.security import encrypt_api_key
 
 
-def set_creds_for_org(*, session: Session, creds_add: CredsCreate) -> Credential:
-    """Set credentials for an organization. If provider is specified, add it to the existing credentials."""
-    # Validate all providers and their credentials
-    if creds_add.credential:
-        for provider, credentials in creds_add.credential.items():
-            validate_provider(provider)
-            validate_provider_credentials(provider, credentials)
-            # Encrypt API key if present
-            if isinstance(credentials, dict) and "api_key" in credentials:
-                credentials["api_key"] = encrypt_api_key(credentials["api_key"])
+def set_creds_for_org(*, session: Session, creds_add: CredsCreate) -> List[Credential]:
+    """Set credentials for an organization. Creates a separate row for each provider."""
+    created_credentials = []
 
-    creds = Credential(
-        organization_id=creds_add.organization_id,
-        is_active=creds_add.is_active,
-        credential=creds_add.credential,
-    )
-    creds.inserted_at = datetime.utcnow()
-    try:
-        session.add(creds)
-        session.commit()
-        session.refresh(creds)
-    except IntegrityError as e:
-        session.rollback()
-        raise ValueError(f"Error while adding credentials: {str(e)}")
-    return creds
+    if not creds_add.credential:
+        raise ValueError("No credentials provided")
+
+    for provider, credentials in creds_add.credential.items():
+        # Validate provider and credentials
+        validate_provider(provider)
+        validate_provider_credentials(provider, credentials)
+
+        # Encrypt API key if present
+        if isinstance(credentials, dict) and "api_key" in credentials:
+            credentials["api_key"] = encrypt_api_key(credentials["api_key"])
+
+        # Create a row for each provider
+        credential = Credential(
+            organization_id=creds_add.organization_id,
+            is_active=creds_add.is_active,
+            provider=provider,
+            credential=credentials,
+        )
+        credential.inserted_at = datetime.utcnow()
+        try:
+            session.add(credential)
+            session.commit()
+            session.refresh(credential)
+            created_credentials.append(credential)
+        except IntegrityError as e:
+            session.rollback()
+            raise ValueError(f"Error while adding credentials for provider {provider}: {str(e)}")
+
+    return created_credentials
 
 
 def get_key_by_org(
     *, session: Session, org_id: int, provider: str = "openai"
 ) -> Optional[str]:
-    """
-    Fetches the API key from the credentials for the given organization and provider.
-
-    Args:
-        session: Database session
-        org_id: Organization ID
-        provider: Provider name (defaults to 'openai')
-
-    Returns:
-        Optional[str]: API key if found, None otherwise
-    """
-    statement = select(Credential).where(Credential.organization_id == org_id)
+    """Fetches the API key from the credentials for the given organization and provider."""
+    statement = select(Credential).where(
+        Credential.organization_id == org_id,
+        Credential.provider == provider,
+        Credential.is_active == True
+    )
     creds = session.exec(statement).first()
 
-    # Check if creds exists and if the credential field contains the api_key for the specified provider
-    if (
-        creds
-        and creds.credential
-        and provider in creds.credential
-        and "api_key" in creds.credential[provider]
-    ):
-        return creds.credential[provider]["api_key"]
+    if creds and creds.credential and "api_key" in creds.credential:
+        return creds.credential["api_key"]
 
     return None
 
 
-def get_creds_by_org(*, session: Session, org_id: int) -> Optional[Credential]:
-    """Fetches all credentials for the given organization."""
-    statement = select(Credential).where(Credential.organization_id == org_id)
-    return session.exec(statement).first()
+def get_creds_by_org(*, session: Session, org_id: int) -> List[Credential]:
+    """Fetches all active credentials for the given organization."""
+    statement = select(Credential).where(
+        Credential.organization_id == org_id,
+        Credential.is_active == True
+    )
+    return session.exec(statement).all()
 
 
 def get_provider_credential(
     *, session: Session, org_id: int, provider: str
 ) -> Optional[Dict[str, Any]]:
     """Fetches credentials for a specific provider of an organization."""
-    # Validate provider name
     validate_provider(provider)
-
-    creds = get_creds_by_org(session=session, org_id=org_id)
-    if not creds or not creds.credential:
-        return None
-    return creds.credential.get(provider)
+    
+    statement = select(Credential).where(
+        Credential.organization_id == org_id,
+        Credential.provider == provider,
+        Credential.is_active == True
+    )
+    creds = session.exec(statement).first()
+    
+    return creds.credential if creds else None
 
 
 def get_providers(*, session: Session, org_id: int) -> List[str]:
-    """Returns a list of all providers for which credentials are stored."""
+    """Returns a list of all active providers for which credentials are stored."""
     creds = get_creds_by_org(session=session, org_id=org_id)
-    if not creds or not creds.credential:
-        return []
-    return list(creds.credential.keys())
+    return [cred.provider for cred in creds]
 
 
 def update_creds_for_org(
     session: Session, org_id: int, creds_in: CredsUpdate
-) -> Credential:
+) -> List[Credential]:
     """Update credentials for an organization. Can update specific provider or add new provider."""
-    creds = session.exec(
-        select(Credential).where(Credential.organization_id == org_id)
-    ).first()
+    if not creds_in.provider or not creds_in.credential:
+        raise ValueError("Provider and credential information must be provided")
 
-    if not creds:
-        raise ValueError("Credentials not found")
+    # Validate provider and credentials
+    validate_provider(creds_in.provider)
+    validate_provider_credentials(creds_in.provider, creds_in.credential)
 
-    # Initialize credential dict if it doesn't exist
-    if not creds.credential:
-        creds.credential = {}
+    # Encrypt API key if present
+    if isinstance(creds_in.credential, dict) and "api_key" in creds_in.credential:
+        creds_in.credential["api_key"] = encrypt_api_key(creds_in.credential["api_key"])
 
-    # Update provider credentials if provided
-    if creds_in.credential:
-        if not creds_in.provider:
-            raise ValueError("Provider must be specified to update nested credential")
+    # Check if credentials exist for this provider
+    statement = select(Credential).where(
+        Credential.organization_id == org_id,
+        Credential.provider == creds_in.provider
+    )
+    existing_cred = session.exec(statement).first()
 
-        # Validate provider and credentials
-        validate_provider(creds_in.provider)
-        validate_provider_credentials(creds_in.provider, creds_in.credential)
-
-        # Encrypt API key if present
-        if isinstance(creds_in.credential, dict) and "api_key" in creds_in.credential:
-            creds_in.credential["api_key"] = encrypt_api_key(
-                creds_in.credential["api_key"]
-            )
-
-        # Update or add the provider's credentials
-        creds.credential[creds_in.provider] = creds_in.credential
-
-    # Update is_active if provided
-    if creds_in.is_active is not None:
-        creds.is_active = creds_in.is_active
-
-    # Set the updated_at timestamp
-    creds.updated_at = datetime.utcnow()
-
-    try:
-        session.add(creds)
-        session.commit()
-        session.refresh(creds)
-    except IntegrityError as e:
-        session.rollback()
-        raise ValueError(f"Error while updating credentials: {str(e)}")
-
-    return creds
+    if existing_cred:
+        # Update existing credentials
+        existing_cred.credential = creds_in.credential
+        existing_cred.is_active = creds_in.is_active if creds_in.is_active is not None else True
+        existing_cred.updated_at = datetime.utcnow()
+        try:
+            session.add(existing_cred)
+            session.commit()
+            session.refresh(existing_cred)
+            return [existing_cred]
+        except IntegrityError as e:
+            session.rollback()
+            raise ValueError(f"Error while updating credentials: {str(e)}")
+    else:
+        # Create new credentials
+        new_cred = Credential(
+            organization_id=org_id,
+            provider=creds_in.provider,
+            credential=creds_in.credential,
+            is_active=creds_in.is_active if creds_in.is_active is not None else True
+        )
+        try:
+            session.add(new_cred)
+            session.commit()
+            session.refresh(new_cred)
+            return [new_cred]
+        except IntegrityError as e:
+            session.rollback()
+            raise ValueError(f"Error while creating credentials: {str(e)}")
 
 
 def remove_provider_credential(
     session: Session, org_id: int, provider: str
 ) -> Credential:
-    """Remove credentials for a specific provider while keeping others intact."""
-    # Validate provider name
+    """Remove credentials for a specific provider."""
     validate_provider(provider)
 
-    creds = session.exec(
-        select(Credential).where(Credential.organization_id == org_id)
-    ).first()
+    statement = select(Credential).where(
+        Credential.organization_id == org_id,
+        Credential.provider == provider
+    )
+    creds = session.exec(statement).first()
 
     if not creds:
-        raise ValueError("Credentials not found")
+        raise ValueError(f"Credentials not found for provider '{provider}'")
 
-    if not creds.credential or provider not in creds.credential:
-        raise ValueError(f"Provider '{provider}' not found in credentials")
-
-    # Remove the provider's credentials
-    del creds.credential[provider]
+    # Soft delete by setting is_active to False
+    creds.is_active = False
     creds.updated_at = datetime.utcnow()
 
     try:
         session.add(creds)
         session.commit()
         session.refresh(creds)
+        return creds
     except IntegrityError as e:
         session.rollback()
         raise ValueError(f"Error while removing provider credentials: {str(e)}")
 
-    return creds
 
-
-def remove_creds_for_org(*, session: Session, org_id: int) -> Optional[Credential]:
-    """Removes (soft deletes) all credentials for the given organization while preserving provider structure."""
+def remove_creds_for_org(*, session: Session, org_id: int) -> List[Credential]:
+    """Removes (soft deletes) all credentials for the given organization."""
     statement = select(Credential).where(
-        Credential.organization_id == org_id, Credential.is_active == True
+        Credential.organization_id == org_id,
+        Credential.is_active == True
     )
-    creds = session.exec(statement).first()
-
-    if creds:
-        try:
-            creds.is_active = False
-            creds.deleted_at = datetime.utcnow()
-            # Clear credentials for each provider but keep the provider structure
-            if creds.credential:
-                for provider in creds.credential:
-                    creds.credential[provider] = {}
-            session.add(creds)
-            session.commit()
-            session.refresh(creds)
-        except IntegrityError as e:
-            session.rollback()
-            raise ValueError(f"Error while deleting credentials: {str(e)}")
-
-    return creds
+    creds = session.exec(statement).all()
+    
+    for cred in creds:
+        cred.is_active = False
+        cred.updated_at = datetime.utcnow()
+        session.add(cred)
+    
+    try:
+        session.commit()
+        for cred in creds:
+            session.refresh(cred)
+        return creds
+    except IntegrityError as e:
+        session.rollback()
+        raise ValueError(f"Error while removing organization credentials: {str(e)}")
