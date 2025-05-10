@@ -13,6 +13,8 @@ from app.utils import APIResponse
 from datetime import datetime
 from app.core.providers import validate_provider
 from typing import List
+from sqlalchemy.exc import IntegrityError
+from app.models.organization import Organization
 
 router = APIRouter(prefix="/credentials", tags=["credentials"])
 
@@ -111,6 +113,14 @@ def read_provider_credential(*, session: SessionDep, org_id: int, provider: str)
 )
 def update_credential(*, session: SessionDep, org_id: int, creds_in: CredsUpdate):
     try:
+        # Check if the organization exists
+        organization = session.get(Organization, org_id)
+        if not organization:
+            raise HTTPException(
+                status_code=404,
+                detail="Organization not found"
+            )
+
         updated_creds = update_creds_for_org(
             session=session, org_id=org_id, creds_in=creds_in
         )
@@ -120,6 +130,15 @@ def update_credential(*, session: SessionDep, org_id: int, creds_in: CredsUpdate
                 detail="Failed to update credentials"
             )
         return APIResponse.success_response(updated_creds)
+    except IntegrityError as e:
+        if "ForeignKeyViolation" in str(e):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid organization ID. Ensure the organization exists before updating credentials."
+            )
+        raise HTTPException(
+            status_code=500, detail=f"An unexpected database error occurred: {str(e)}"
+        )
     except ValueError as e:
         if "Unsupported provider" in str(e):
             raise HTTPException(status_code=400, detail=str(e))
@@ -144,7 +163,7 @@ def delete_provider_credential(*, session: SessionDep, org_id: int, provider: st
             session=session, org_id=org_id, provider=provider_enum
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=404, detail="Provider credentials not found")  # Updated to return 404
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"

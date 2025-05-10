@@ -177,8 +177,8 @@ def test_update_credentials_not_found(db: Session, superuser_token_headers: dict
         headers=superuser_token_headers,
     )
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "Failed to update credentials"
+    assert response.status_code == 404  # Expect 404 for non-existent organization
+    assert response.json()["detail"] == "Organization not found"
 
 
 def test_delete_provider_credential(db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds):

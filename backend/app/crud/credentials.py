@@ -99,6 +99,9 @@ def get_providers(*, session: Session, org_id: int) -> List[str]:
 def update_creds_for_org(
     session: Session, org_id: int, creds_in: CredsUpdate
 ) -> List[Credential]:
+    if not creds_in:
+        raise ValueError("Missing request body or failed to parse JSON into CredsUpdate")
+
     """Update credentials for an organization. Can update specific provider or add new provider."""
     if not creds_in.provider or not creds_in.credential:
         raise ValueError("Provider and credential information must be provided")
