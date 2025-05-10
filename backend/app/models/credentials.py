@@ -46,10 +46,10 @@ class Credential(CredsBase, table=True):
     """Database model for storing provider credentials.
     Each row represents credentials for a single provider.
     """
+
     id: int = Field(default=None, primary_key=True)
     provider: str = Field(
-        index=True,
-        description="Provider name like 'openai', 'gemini'"
+        index=True, description="Provider name like 'openai', 'gemini'"
     )
     credential: Dict[str, Any] = Field(
         sa_column=sa.Column(MutableDict.as_mutable(sa.JSON)),
@@ -64,8 +64,7 @@ class Credential(CredsBase, table=True):
         sa_column=sa.Column(sa.DateTime, onupdate=datetime.utcnow),
     )
     deleted_at: Optional[datetime] = Field(
-        default=None,
-        sa_column=sa.Column(sa.DateTime, nullable=True)
+        default=None, sa_column=sa.Column(sa.DateTime, nullable=True)
     )
 
     organization: Optional["Organization"] = Relationship(back_populates="creds")

@@ -43,7 +43,9 @@ def set_creds_for_org(*, session: Session, creds_add: CredsCreate) -> List[Crede
             created_credentials.append(credential)
         except IntegrityError as e:
             session.rollback()
-            raise ValueError(f"Error while adding credentials for provider {provider}: {str(e)}")
+            raise ValueError(
+                f"Error while adding credentials for provider {provider}: {str(e)}"
+            )
 
     return created_credentials
 
@@ -55,7 +57,7 @@ def get_key_by_org(
     statement = select(Credential).where(
         Credential.organization_id == org_id,
         Credential.provider == provider,
-        Credential.is_active == True
+        Credential.is_active == True,
     )
     creds = session.exec(statement).first()
 
@@ -68,8 +70,7 @@ def get_key_by_org(
 def get_creds_by_org(*, session: Session, org_id: int) -> List[Credential]:
     """Fetches all active credentials for the given organization."""
     statement = select(Credential).where(
-        Credential.organization_id == org_id,
-        Credential.is_active == True
+        Credential.organization_id == org_id, Credential.is_active == True
     )
     return session.exec(statement).all()
 
@@ -79,14 +80,14 @@ def get_provider_credential(
 ) -> Optional[Dict[str, Any]]:
     """Fetches credentials for a specific provider of an organization."""
     validate_provider(provider)
-    
+
     statement = select(Credential).where(
         Credential.organization_id == org_id,
         Credential.provider == provider,
-        Credential.is_active == True
+        Credential.is_active == True,
     )
     creds = session.exec(statement).first()
-    
+
     return creds.credential if creds else None
 
 
@@ -100,7 +101,9 @@ def update_creds_for_org(
     session: Session, org_id: int, creds_in: CredsUpdate
 ) -> List[Credential]:
     if not creds_in:
-        raise ValueError("Missing request body or failed to parse JSON into CredsUpdate")
+        raise ValueError(
+            "Missing request body or failed to parse JSON into CredsUpdate"
+        )
 
     """Update credentials for an organization. Can update specific provider or add new provider."""
     if not creds_in.provider or not creds_in.credential:
@@ -116,15 +119,16 @@ def update_creds_for_org(
 
     # Check if credentials exist for this provider
     statement = select(Credential).where(
-        Credential.organization_id == org_id,
-        Credential.provider == creds_in.provider
+        Credential.organization_id == org_id, Credential.provider == creds_in.provider
     )
     existing_cred = session.exec(statement).first()
 
     if existing_cred:
         # Update existing credentials
         existing_cred.credential = creds_in.credential
-        existing_cred.is_active = creds_in.is_active if creds_in.is_active is not None else True
+        existing_cred.is_active = (
+            creds_in.is_active if creds_in.is_active is not None else True
+        )
         existing_cred.updated_at = datetime.utcnow()
         try:
             session.add(existing_cred)
@@ -140,7 +144,7 @@ def update_creds_for_org(
             organization_id=org_id,
             provider=creds_in.provider,
             credential=creds_in.credential,
-            is_active=creds_in.is_active if creds_in.is_active is not None else True
+            is_active=creds_in.is_active if creds_in.is_active is not None else True,
         )
         try:
             session.add(new_cred)
@@ -159,8 +163,7 @@ def remove_provider_credential(
     validate_provider(provider)
 
     statement = select(Credential).where(
-        Credential.organization_id == org_id,
-        Credential.provider == provider
+        Credential.organization_id == org_id, Credential.provider == provider
     )
     creds = session.exec(statement).first()
 
@@ -187,7 +190,9 @@ def remove_creds_for_org(session: Session, org_id: int):
     Returns the list of updated credentials or None if no credentials were found.
     """
     creds = session.exec(
-        select(Credential).where(Credential.organization_id == org_id, Credential.is_active == True)
+        select(Credential).where(
+            Credential.organization_id == org_id, Credential.is_active == True
+        )
     ).all()
 
     if not creds:

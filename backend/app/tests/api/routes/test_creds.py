@@ -35,7 +35,7 @@ def create_organization_and_creds(db: Session):
             Provider.OPENAI.value: {
                 "api_key": api_key,
                 "model": "gpt-4",
-                "temperature": 0.7
+                "temperature": 0.7,
             }
         },
     )
@@ -56,7 +56,7 @@ def test_set_creds_for_org(db: Session, superuser_token_headers: dict[str, str])
             Provider.OPENAI.value: {
                 "api_key": api_key,
                 "model": "gpt-4",
-                "temperature": 0.7
+                "temperature": 0.7,
             }
         },
     }
@@ -76,7 +76,9 @@ def test_set_creds_for_org(db: Session, superuser_token_headers: dict[str, str])
     assert data[0]["credential"]["model"] == "gpt-4"
 
 
-def test_read_credentials_with_creds(db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds):
+def test_read_credentials_with_creds(
+    db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds
+):
     org, creds_data = create_organization_and_creds
     set_creds_for_org(session=db, creds_add=creds_data)
 
@@ -94,7 +96,9 @@ def test_read_credentials_with_creds(db: Session, superuser_token_headers: dict[
     assert data[0]["credential"]["model"] == "gpt-4"
 
 
-def test_read_credentials_not_found(db: Session, superuser_token_headers: dict[str, str]):
+def test_read_credentials_not_found(
+    db: Session, superuser_token_headers: dict[str, str]
+):
     response = client.get(
         f"{settings.API_V1_STR}/credentials/999999",
         headers=superuser_token_headers,
@@ -103,7 +107,9 @@ def test_read_credentials_not_found(db: Session, superuser_token_headers: dict[s
     assert response.json()["detail"] == "Credentials not found"
 
 
-def test_read_provider_credential(db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds):
+def test_read_provider_credential(
+    db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds
+):
     org, creds_data = create_organization_and_creds
     set_creds_for_org(session=db, creds_add=creds_data)
 
@@ -118,7 +124,9 @@ def test_read_provider_credential(db: Session, superuser_token_headers: dict[str
     assert "api_key" in data
 
 
-def test_read_provider_credential_not_found(db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds):
+def test_read_provider_credential_not_found(
+    db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds
+):
     org, _ = create_organization_and_creds
 
     response = client.get(
@@ -130,7 +138,9 @@ def test_read_provider_credential_not_found(db: Session, superuser_token_headers
     assert response.json()["detail"] == "Provider credentials not found"
 
 
-def test_update_credentials(db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds):
+def test_update_credentials(
+    db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds
+):
     org, creds_data = create_organization_and_creds
     set_creds_for_org(session=db, creds_add=creds_data)
 
@@ -139,8 +149,8 @@ def test_update_credentials(db: Session, superuser_token_headers: dict[str, str]
         "credential": {
             "api_key": "sk-" + generate_random_string(),
             "model": "gpt-4-turbo",
-            "temperature": 0.8
-        }
+            "temperature": 0.8,
+        },
     }
 
     response = client.patch(
@@ -158,7 +168,9 @@ def test_update_credentials(db: Session, superuser_token_headers: dict[str, str]
     assert data[0]["updated_at"] is not None
 
 
-def test_update_credentials_not_found(db: Session, superuser_token_headers: dict[str, str]):
+def test_update_credentials_not_found(
+    db: Session, superuser_token_headers: dict[str, str]
+):
     # Create a non-existent organization ID
     non_existent_org_id = 999999
 
@@ -167,8 +179,8 @@ def test_update_credentials_not_found(db: Session, superuser_token_headers: dict
         "credential": {
             "api_key": "sk-" + generate_random_string(),
             "model": "gpt-4",
-            "temperature": 0.7
-        }
+            "temperature": 0.7,
+        },
     }
 
     response = client.patch(
@@ -181,7 +193,9 @@ def test_update_credentials_not_found(db: Session, superuser_token_headers: dict
     assert response.json()["detail"] == "Organization not found"
 
 
-def test_delete_provider_credential(db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds):
+def test_delete_provider_credential(
+    db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds
+):
     org, creds_data = create_organization_and_creds
     set_creds_for_org(session=db, creds_add=creds_data)
 
@@ -195,7 +209,9 @@ def test_delete_provider_credential(db: Session, superuser_token_headers: dict[s
     assert data["message"] == "Provider credentials removed successfully"
 
 
-def test_delete_provider_credential_not_found(db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds):
+def test_delete_provider_credential_not_found(
+    db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds
+):
     org, _ = create_organization_and_creds
 
     response = client.delete(
@@ -207,7 +223,9 @@ def test_delete_provider_credential_not_found(db: Session, superuser_token_heade
     assert response.json()["detail"] == "Provider credentials not found"
 
 
-def test_delete_all_credentials(db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds):
+def test_delete_all_credentials(
+    db: Session, superuser_token_headers: dict[str, str], create_organization_and_creds
+):
     org, creds_data = create_organization_and_creds
     set_creds_for_org(session=db, creds_add=creds_data)
 
@@ -229,7 +247,9 @@ def test_delete_all_credentials(db: Session, superuser_token_headers: dict[str, 
     assert response.json()["detail"] == "Credentials not found"
 
 
-def test_delete_all_credentials_not_found(db: Session, superuser_token_headers: dict[str, str]):
+def test_delete_all_credentials_not_found(
+    db: Session, superuser_token_headers: dict[str, str]
+):
     response = client.delete(
         f"{settings.API_V1_STR}/credentials/999999",
         headers=superuser_token_headers,

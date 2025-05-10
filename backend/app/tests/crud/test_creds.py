@@ -45,7 +45,7 @@ def org_with_creds(db: Session):
             Provider.OPENAI.value: {
                 "api_key": api_key,
                 "model": "gpt-4",
-                "temperature": 0.7
+                "temperature": 0.7,
             }
         },
     )
@@ -82,11 +82,7 @@ def test_update_creds_for_org(db: Session, org_with_creds):
     new_api_key = "sk-" + generate_random_string(12)
     update_data = CredsUpdate(
         provider=Provider.OPENAI.value,
-        credential={
-            "api_key": new_api_key,
-            "model": "gpt-4-turbo",
-            "temperature": 0.8
-        }
+        credential={"api_key": new_api_key, "model": "gpt-4-turbo", "temperature": 0.8},
     )
 
     updated = update_creds_for_org(session=db, org_id=org.id, creds_in=update_data)
