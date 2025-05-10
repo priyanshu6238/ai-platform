@@ -68,6 +68,8 @@ def read_credential(*, session: SessionDep, org_id: int):
         if not creds:
             raise HTTPException(status_code=404, detail="Credentials not found")
         return APIResponse.success_response(creds)
+    except HTTPException as e:
+        raise e  # Ensure HTTPException is not wrapped again
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
@@ -148,7 +150,7 @@ def delete_provider_credential(*, session: SessionDep, org_id: int, provider: st
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
         )
 
-    if updated_creds is None:
+    if not updated_creds:  # Ensure proper check for no credentials found
         raise HTTPException(status_code=404, detail="Provider credentials not found")
 
     return APIResponse.success_response(
@@ -171,7 +173,7 @@ def delete_all_credentials(*, session: SessionDep, org_id: int):
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
         )
 
-    if creds is None:
+    if not creds:  # Ensure proper check for no credentials found
         raise HTTPException(
             status_code=404, detail="Credentials for organization not found"
         )

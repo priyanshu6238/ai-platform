@@ -178,25 +178,22 @@ def remove_provider_credential(
         raise ValueError(f"Error while removing provider credentials: {str(e)}")
 
 
-def remove_creds_for_org(*, session: Session, org_id: int) -> List[Credential]:
-    """Removes (soft deletes) all credentials for the given organization."""
-    statement = select(Credential).where(
-        Credential.organization_id == org_id,
-        Credential.is_active == True
-    )
-    creds = session.exec(statement).all()
-    
+def remove_creds_for_org(session: Session, org_id: int):
+    """
+    Removes all credentials for a specific organization by marking them as inactive.
+    Returns the list of updated credentials or None if no credentials were found.
+    """
+    creds = session.exec(
+        select(Credential).where(Credential.organization_id == org_id, Credential.is_active == True)
+    ).all()
+
+    if not creds:
+        return None  # Return None if no credentials are found
+
     for cred in creds:
         cred.is_active = False
         cred.deleted_at = datetime.utcnow()
-        cred.updated_at = datetime.utcnow()
         session.add(cred)
-    
-    try:
-        session.commit()
-        for cred in creds:
-            session.refresh(cred)
-        return creds
-    except IntegrityError as e:
-        session.rollback()
-        raise ValueError(f"Error while removing organization credentials: {str(e)}")
+
+    session.commit()
+    return creds

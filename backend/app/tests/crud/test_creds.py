@@ -20,7 +20,7 @@ from app.crud.credentials import (
     remove_creds_for_org,
 )
 from app.core.providers import Provider
-from app.core.security import encrypt_api_key
+from app.core.security import encrypt_api_key, decrypt_api_key
 from app.main import app
 
 client = TestClient(app)
@@ -59,7 +59,9 @@ def test_create_credentials(db: Session, org_with_creds):
     assert len(creds) == 1
     assert creds[0].provider == Provider.OPENAI.value
     assert "api_key" in creds[0].credential
-    assert creds[0].credential["api_key"].startswith("encrypted_")
+    # Decrypt the stored API key before asserting
+    decrypted_api_key = decrypt_api_key(creds[0].credential["api_key"])
+    assert decrypted_api_key.startswith("sk-")
     assert creds[0].is_active
     assert creds[0].inserted_at is not None
 
@@ -91,7 +93,8 @@ def test_update_creds_for_org(db: Session, org_with_creds):
 
     assert updated is not None
     assert len(updated) == 1
-    assert updated[0].credential["api_key"] == encrypt_api_key(new_api_key)
+    # Decrypt the stored API key before asserting equality
+    assert decrypt_api_key(updated[0].credential["api_key"]) == new_api_key
     assert updated[0].credential["model"] == "gpt-4-turbo"
     assert updated[0].updated_at is not None
 

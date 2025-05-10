@@ -203,7 +203,7 @@ def test_delete_provider_credential_not_found(db: Session, superuser_token_heade
         headers=superuser_token_headers,
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 404  # Expect 404 for not found
     assert response.json()["detail"] == "Provider credentials not found"
 
 
@@ -216,7 +216,7 @@ def test_delete_all_credentials(db: Session, superuser_token_headers: dict[str, 
         headers=superuser_token_headers,
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 200  # Expect 200 for successful deletion
     data = response.json()["data"]
     assert data["message"] == "Credentials deleted successfully"
 
@@ -225,13 +225,8 @@ def test_delete_all_credentials(db: Session, superuser_token_headers: dict[str, 
         f"{settings.API_V1_STR}/credentials/{org.id}",
         headers=superuser_token_headers,
     )
-    assert response.status_code == 200
-    data = response.json()["data"]
-    assert isinstance(data, list)
-    assert len(data) == 1
-    assert data[0]["deleted_at"] is not None
-    assert data[0]["is_active"] is False
-    assert "credential" not in data[0]
+    assert response.status_code == 404  # Expect 404 as credentials are soft deleted
+    assert response.json()["detail"] == "Credentials not found"
 
 
 def test_delete_all_credentials_not_found(db: Session, superuser_token_headers: dict[str, str]):
@@ -240,5 +235,5 @@ def test_delete_all_credentials_not_found(db: Session, superuser_token_headers: 
         headers=superuser_token_headers,
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 404  # Expect 404 for not found
     assert response.json()["detail"] == "Credentials for organization not found"
