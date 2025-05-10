@@ -231,6 +231,7 @@ def test_delete_all_credentials(db: Session, superuser_token_headers: dict[str, 
     assert len(data) == 1
     assert data[0]["deleted_at"] is not None
     assert data[0]["is_active"] is False
+    assert "credential" not in data[0]
 
 
 def test_delete_all_credentials_not_found(db: Session, superuser_token_headers: dict[str, str]):

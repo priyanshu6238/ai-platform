@@ -188,6 +188,7 @@ def remove_creds_for_org(*, session: Session, org_id: int) -> List[Credential]:
     
     for cred in creds:
         cred.is_active = False
+        cred.deleted_at = datetime.utcnow()
         cred.updated_at = datetime.utcnow()
         session.add(cred)
     
