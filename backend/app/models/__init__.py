@@ -48,5 +48,5 @@ from .credentials import (
     CredsBase,
     CredsCreate,
     CredsPublic,
-    CredsUpdate,
+    CredsUpdate
 )

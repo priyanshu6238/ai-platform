@@ -2,14 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.api.deps import SessionDep, get_current_active_superuser
 from app.crud.credentials import (
     get_creds_by_org,
-    get_key_by_org,
+    get_provider_credential,
     remove_creds_for_org,
     set_creds_for_org,
     update_creds_for_org,
+    remove_provider_credential,
 )
 from app.models import CredsCreate, CredsPublic, CredsUpdate
 from app.utils import APIResponse
 from datetime import datetime
+from app.core.providers import validate_provider
+from typing import List
 
 router = APIRouter(prefix="/credentials", tags=["credentials"])
 
@@ -17,80 +20,34 @@ router = APIRouter(prefix="/credentials", tags=["credentials"])
 @router.post(
     "/",
     dependencies=[Depends(get_current_active_superuser)],
-    response_model=APIResponse[CredsPublic],
+    response_model=APIResponse[List[CredsPublic]],
+    summary="Create new credentials for an organization",
+    description="Creates new credentials for a specific organization. This endpoint requires superuser privileges. If credentials already exist for the organization, it will return an error.",
 )
 def create_new_credential(*, session: SessionDep, creds_in: CredsCreate):
-    new_creds = None
     try:
         existing_creds = get_creds_by_org(
             session=session, org_id=creds_in.organization_id
         )
-        if not existing_creds:
-            new_creds = set_creds_for_org(session=session, creds_add=creds_in)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"An unexpected error occurred: {str(e)}"
-        )
-
-    # Ensure inserted_at is set during creation
-    new_creds.inserted_at = datetime.utcnow()
-
-    return APIResponse.success_response(new_creds)
-
-
-@router.get(
-    "/{org_id}",
-    dependencies=[Depends(get_current_active_superuser)],
-    response_model=APIResponse[CredsPublic],
-)
-def read_credential(*, session: SessionDep, org_id: int):
-    try:
-        creds = get_creds_by_org(session=session, org_id=org_id)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"An unexpected error occurred: {str(e)}"
-        )
-
-    if creds is None:
-        raise HTTPException(status_code=404, detail="Credentials not found")
-
-    return APIResponse.success_response(creds)
-
-
-@router.get(
-    "/{org_id}/api-key",
-    dependencies=[Depends(get_current_active_superuser)],
-    response_model=APIResponse[dict],
-)
-def read_api_key(*, session: SessionDep, org_id: int):
-    try:
-        api_key = get_key_by_org(session=session, org_id=org_id)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"An unexpected error occurred: {str(e)}"
-        )
-
-    if api_key is None:
-        raise HTTPException(status_code=404, detail="API key not found")
-
-    return APIResponse.success_response({"api_key": api_key})
-
-
-@router.patch(
-    "/{org_id}",
-    dependencies=[Depends(get_current_active_superuser)],
-    response_model=APIResponse[CredsPublic],
-)
-def update_credential(*, session: SessionDep, org_id: int, creds_in: CredsUpdate):
-    try:
-        updated_creds = update_creds_for_org(
-            session=session, org_id=org_id, creds_in=creds_in
-        )
-
-        updated_creds.updated_at = datetime.utcnow()
-
-        return APIResponse.success_response(updated_creds)
+        if existing_creds:
+            raise HTTPException(
+                status_code=400,
+                detail="Credentials already exist for this organization"
+            )
+            
+        new_creds = set_creds_for_org(session=session, creds_add=creds_in)
+        if not new_creds:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to create credentials"
+            )
+            
+        # Return all created credentials
+        return APIResponse.success_response(new_creds)
+            
     except ValueError as e:
+        if "Unsupported provider" in str(e):
+            raise HTTPException(status_code=400, detail=str(e))
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(
@@ -98,18 +55,115 @@ def update_credential(*, session: SessionDep, org_id: int, creds_in: CredsUpdate
         )
 
 
-from fastapi import HTTPException, Depends
-from app.crud.credentials import remove_creds_for_org
-from app.utils import APIResponse
-from app.api.deps import SessionDep, get_current_active_superuser
+@router.get(
+    "/{org_id}",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=APIResponse[List[CredsPublic]],
+    summary="Get all credentials for an organization",
+    description="Retrieves all provider credentials associated with a specific organization. This endpoint requires superuser privileges.",
+)
+def read_credential(*, session: SessionDep, org_id: int):
+    try:
+        creds = get_creds_by_org(session=session, org_id=org_id)
+        if not creds:
+            raise HTTPException(status_code=404, detail="Credentials not found")
+        return APIResponse.success_response(creds)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"An unexpected error occurred: {str(e)}"
+        )
+
+
+@router.get(
+    "/{org_id}/{provider}",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=APIResponse[dict],
+    summary="Get specific provider credentials",
+    description="Retrieves credentials for a specific provider (e.g., 'openai', 'anthropic') for a given organization. This endpoint requires superuser privileges.",
+)
+def read_provider_credential(*, session: SessionDep, org_id: int, provider: str):
+    try:
+        provider_enum = validate_provider(provider)
+        provider_creds = get_provider_credential(
+            session=session, org_id=org_id, provider=provider_enum
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"An unexpected error occurred: {str(e)}"
+        )
+
+    if provider_creds is None:
+        raise HTTPException(status_code=404, detail="Provider credentials not found")
+
+    return APIResponse.success_response(provider_creds)
+
+
+@router.patch(
+    "/{org_id}",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=APIResponse[List[CredsPublic]],
+    summary="Update organization credentials",
+    description="Updates credentials for a specific organization. Can update specific provider credentials or add new providers. This endpoint requires superuser privileges.",
+)
+def update_credential(*, session: SessionDep, org_id: int, creds_in: CredsUpdate):
+    try:
+        updated_creds = update_creds_for_org(
+            session=session, org_id=org_id, creds_in=creds_in
+        )
+        if not updated_creds:
+            raise HTTPException(
+                status_code=404,
+                detail="Failed to update credentials"
+            )
+        return APIResponse.success_response(updated_creds)
+    except ValueError as e:
+        if "Unsupported provider" in str(e):
+            raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"An unexpected error occurred: {str(e)}"
+        )
 
 
 @router.delete(
-    "/{org_id}/api-key",
+    "/{org_id}/{provider}",
     dependencies=[Depends(get_current_active_superuser)],
     response_model=APIResponse[dict],
+    summary="Delete specific provider credentials",
+    description="Removes credentials for a specific provider while keeping other provider credentials intact. This endpoint requires superuser privileges.",
 )
-def delete_credential(*, session: SessionDep, org_id: int):
+def delete_provider_credential(*, session: SessionDep, org_id: int, provider: str):
+    try:
+        provider_enum = validate_provider(provider)
+        updated_creds = remove_provider_credential(
+            session=session, org_id=org_id, provider=provider_enum
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"An unexpected error occurred: {str(e)}"
+        )
+
+    if updated_creds is None:
+        raise HTTPException(status_code=404, detail="Provider credentials not found")
+
+    return APIResponse.success_response(
+        {"message": "Provider credentials removed successfully"}
+    )
+
+
+@router.delete(
+    "/{org_id}",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=APIResponse[dict],
+    summary="Delete all organization credentials",
+    description="Removes all credentials for a specific organization. This is a soft delete operation that marks credentials as inactive. This endpoint requires superuser privileges.",
+)
+def delete_all_credentials(*, session: SessionDep, org_id: int):
     try:
         creds = remove_creds_for_org(session=session, org_id=org_id)
     except Exception as e:
@@ -122,6 +176,4 @@ def delete_credential(*, session: SessionDep, org_id: int):
             status_code=404, detail="Credentials for organization not found"
         )
 
-    # No need to manually set deleted_at and is_active if it's done in remove_creds_for_org
-    # Simply return the success response
     return APIResponse.success_response({"message": "Credentials deleted successfully"})
