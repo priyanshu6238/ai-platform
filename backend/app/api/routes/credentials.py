@@ -113,8 +113,19 @@ def read_provider_credential(*, session: SessionDep, org_id: int, provider: str)
 )
 def update_credential(*, session: SessionDep, org_id: int, creds_in: CredsUpdate):
     try:
-        # Check if the organization exists
-        organization = session.get(Organization, org_id)
+        # Validate incoming payload
+        if not creds_in or not creds_in.provider or not creds_in.credential:
+            raise HTTPException(
+                status_code=400,
+                detail="Provider and credential must be provided"
+            )
+
+        # Defensive check to ensure organization exists
+        try:
+            organization = session.get(Organization, org_id)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to fetch organization: {str(e)}")
+
         if not organization:
             raise HTTPException(
                 status_code=404,
@@ -129,7 +140,9 @@ def update_credential(*, session: SessionDep, org_id: int, creds_in: CredsUpdate
                 status_code=404,
                 detail="Failed to update credentials"
             )
+
         return APIResponse.success_response(updated_creds)
+
     except IntegrityError as e:
         if "ForeignKeyViolation" in str(e):
             raise HTTPException(
@@ -143,12 +156,12 @@ def update_credential(*, session: SessionDep, org_id: int, creds_in: CredsUpdate
         if "Unsupported provider" in str(e):
             raise HTTPException(status_code=400, detail=str(e))
         raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
         )
-
-
 @router.delete(
     "/{org_id}/{provider}",
     dependencies=[Depends(get_current_active_superuser)],
@@ -194,7 +207,8 @@ def delete_all_credentials(*, session: SessionDep, org_id: int):
 
     if not creds:  # Ensure proper check for no credentials found
         raise HTTPException(
-            status_code=404, detail="Credentials for organization not found"
+            status_code=404,
+            detail="Credentials for organization not found"
         )
 
     return APIResponse.success_response({"message": "Credentials deleted successfully"})
