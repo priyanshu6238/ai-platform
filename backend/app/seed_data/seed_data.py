@@ -145,11 +145,16 @@ def create_credential(session: Session, org_id: int, provider_data: dict) -> Lis
         logging.info(f"Creating credentials for organization {org_id}")
         credentials = []
         for provider, api_key_data in provider_data.items():
+            # Encrypt the API key
+            encrypted_credential = {
+                "api_key": encrypt_api_key(api_key_data["api_key"])
+            }
+            
             credential = Credential(
                 organization_id=org_id,
                 provider=provider,
                 is_active=True,
-                credential=api_key_data
+                credential=encrypted_credential
             )
             session.add(credential)
             credentials.append(credential)
